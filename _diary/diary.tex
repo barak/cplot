@@ -1,0 +1,61 @@
+\documentclass[a5paper,11pt]{article}
+\usepackage[english]{babel}
+
+% maths packages
+\usepackage{mathtools,commath,amsthm,amssymb,thmtools}
+
+% code
+\usepackage{minted}
+
+% Document-wide formatting
+\usepackage{geometry}
+\usepackage{enumitem}
+\linespread{1.05}
+\setlist{noitemsep}
+
+% links
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup{
+	colorlinks,
+	linkcolor={red!50!black},
+	citecolor={blue!50!black},
+	urlcolor={blue!80!black}
+}
+
+% Fonts
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}  % better spacing
+\usepackage{libertine}
+\usepackage[libertine]{newtxmath}
+
+\title{Diary}
+\author{Conor Reynolds}
+\date{}
+
+\begin{document}
+	\maketitle
+	
+	\section*{2017-09-21}
+	
+	Pretty much decided to use the `pipes' library for data streaming. As for graphics packages, so far we have:
+	
+	% add links to these
+	\begin{itemize}
+		\item gloss
+		\item dynamic-plot
+		\item dynamic-graph
+		\item Chart
+		\item diagrams
+		\item typed-spreadsheet
+		\item plain OpenGL bindings
+	\end{itemize}
+	
+	Going ahead with using gloss, mainly for ease of use (esp. since I have no prior background in any kind of graphics programming).
+	
+	\section*{2017-09-22}
+	
+	Decided to use Haskell's STM library to handle shared mutable state between gloss and the rest of the program. A gloss process is kicked-off with access to a TVar, which is modified by a pipe that continuously reads data from stdin (one line at a time). All it does, currently, is plot a stream of $ x,y $-coordinates onto a blank, white canvas.
+	
+\end{document}

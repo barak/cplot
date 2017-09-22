@@ -1,1 +1,6 @@
 .stack-work/
+*.aux
+*.log
+*.synctex.gz
+*.out
+_minted-*
