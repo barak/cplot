@@ -3,7 +3,7 @@
 
 module Main where
 
-import           Graphics.Gloss.Interface.IO.Animate
+import           Graphics.Gloss.Interface.IO.Game
 
 import           Control.Concurrent
 import           Control.Concurrent.STM
@@ -12,28 +12,27 @@ import           Data.Attoparsec.ByteString.Char8
 import           Pipes
 import qualified Pipes.ByteString                    as P
 
+import Model
+import Events
+import View
+
+
 main :: IO ()
 main = do
   putStrLn "\nCtrl-D to quit"
-  dat <- initPlotData
-  _   <- forkIO $ runGloss dat
-  runEffect $ P.stdin >-> updatePlotData dat
+  model <- initializeModel <$> newTVarIO []
+  _   <- forkIO $ runGloss model
+  runEffect $ P.stdin >-> updatePlotData (plotData model)
 
 --------------------------------------------------------------------------------
 
-type PlotData a = TVar [a]
-
-
-initPlotData :: IO (PlotData a)
+initPlotData :: IO PlotData
 initPlotData = newTVarIO []
 
-addData :: a -> PlotData a -> STM ()
-addData a = flip modifyTVar (a:)
+addData :: (Float, Float) -> PlotData -> STM ()
+addData a = flip modifyTVar' (a:)
 
-readData :: PlotData a -> STM [a]
-readData = readTVar
-
-updatePlotData :: PlotData (Float, Float) -> Consumer P.ByteString IO ()
+updatePlotData :: PlotData -> Consumer P.ByteString IO ()
 updatePlotData dat = forever $ do
   raw <- await
   let Right point = parsePoint raw  -- need proper error handling later
@@ -47,16 +46,13 @@ parsePoint pt = flip parseOnly pt $ do
   endOfLine
   return (realToFrac x, realToFrac y)
 
--- May need to change animateIO -> playIO for flexibility
-runGloss :: PlotData (Float, Float) -> IO ()
-runGloss dat = animateIO
-  (InWindow "cplot" (800, 600) (10, 10))  -- window setup
-  white                                   -- background colour
-
-  -- update function
-  (\_ -> do
-    dat' <- atomically $ readData dat
-    return $ Pictures [ translate x y $ circleSolid 2 | (x, y) <- dat' ])
-
-  -- controller function (not sure if we'll need this yet)
-  (\_ -> return ())
+runGloss :: Model -> IO ()
+runGloss model =
+  playIO
+    (InWindow "cplot" (800, 600) (10, 10))  -- window setup
+    white                                   -- background colour
+    30                                      -- FPS
+    model                                   -- initialize model
+    drawModel
+    handleEvent
+    updateModel
