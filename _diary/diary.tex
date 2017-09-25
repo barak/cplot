@@ -58,4 +58,8 @@
 	
 	Decided to use Haskell's STM library to handle shared mutable state between gloss and the rest of the program. A gloss process is kicked-off with access to a TVar, which is modified by a pipe that continuously reads data from stdin (one line at a time). All it does, currently, is plot a stream of $ x,y $-coordinates onto a blank, white canvas.
 	
+	\section*{2017-09-24 --- 2017-09-25}
+	
+	On a new branch, \verb|anim->play| (which was, in hindsight, not a very good name for a branch), began the migration from the animateIO function to the playIO function to allow for custom event handling, which is no doubt needed. This lead to creating a barebones MVC-style backend, which should allow for much more complex features to be added in the future.
+	
 \end{document}

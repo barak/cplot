@@ -10,11 +10,11 @@ import           Control.Concurrent.STM
 import           Control.Monad
 import           Data.Attoparsec.ByteString.Char8
 import           Pipes
-import qualified Pipes.ByteString                    as P
+import qualified Pipes.ByteString                 as P
 
-import Model
-import Events
-import View
+import           Events
+import           Model
+import           View
 
 
 main :: IO ()
