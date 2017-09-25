@@ -15,8 +15,13 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Graphics.CPlot
+  exposed-modules:     Events
+                     , Model
+                     , View
   build-depends:       base >= 4.7 && < 5
+                     , gloss
+                     , stm
+                     , containers
   default-language:    Haskell2010
 
 executable cplot
