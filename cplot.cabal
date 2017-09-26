@@ -18,6 +18,7 @@ library
   exposed-modules:     Events
                      , Model
                      , View
+  other-modules:       View.Axes
   build-depends:       base >= 4.7 && < 5
                      , gloss
                      , stm
