@@ -1,4 +1,4 @@
-\documentclass[a5paper,11pt]{article}
+\documentclass[a5paper,10pt]{article}
 \usepackage[english]{babel}
 
 % maths packages
@@ -61,5 +61,9 @@
 	\section*{2017-09-24 --- 2017-09-25}
 	
 	On a new branch, \verb|anim->play| (which was, in hindsight, not a very good name for a branch), began the migration from the animateIO function to the playIO function to allow for custom event handling, which is no doubt needed. This lead to creating a barebones MVC-style backend, which should allow for much more complex features to be added in the future.
+	
+	\section*{2017-09-26}
+	
+	Merged \verb|anim->play| with \verb|master|. Work has begun on a new branch, \verb|axes|. This will deal primarily with drawing the axes, although it may end up involving writing a more robust view framework. Inside the viewport, you can have any number of `frames', which are distinct viewing areas, each having their own dataset, zoom level, styles, etc.
 	
 \end{document}
