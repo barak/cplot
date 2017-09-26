@@ -10,22 +10,16 @@ def main():
       '../.stack-work/install/x86_64-linux-nopie/lts-9.5/8.0.2/bin/cplot'
 
   proc = pexpect.spawn(exe_filepath)
-  proc.delaybeforesend = 0.001  # this is normally 0.05, which is too high
+  proc.delaybeforesend = 0.0005  # this is normally 0.05, which is too high
 
   # allow time for cplot to boot
   time.sleep(1)
 
   for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
     proc.sendline('1:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
-
-  for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
-    proc.sendline('2:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
-
-  for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
-    proc.sendline('3:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
-
-  for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
-    proc.sendline('4:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
+    proc.sendline('2:' + str(i * 50) + ' ' + str(i * np.cos(i) / 2 * 50))
+    proc.sendline('3:' + str(i * 50) + ' ' + str((i**3 / 3) * 50))
+    proc.sendline('4:' + str(i * 50) + ' ' + str(np.arctan(i) * 50))
 
   time.sleep(5)
 
