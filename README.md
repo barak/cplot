@@ -17,7 +17,9 @@ The following packages need to be installed:
 * `libghc-attoparsec-dev`
 * `libghc-pipes-bytestring-dev`
 
-At this point, `make` should generate a bloated executable `cplot` which can be installed in `/usr/local/bin/`.
+At this point, `make` should generate a bloated executable `cplot` which can be
+installed in `/usr/local/bin/`. Intermediate `.hi` and `.o` files are sent to
+`/tmp/`.
 
 ## Usage
 
