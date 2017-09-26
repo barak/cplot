@@ -16,7 +16,16 @@ def main():
   time.sleep(1)
 
   for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
-    proc.sendline(str(i * 50) + ' ' + str(np.sin(i) * 50))
+    proc.sendline('1:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
+
+  for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
+    proc.sendline('2:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
+
+  for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
+    proc.sendline('3:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
+
+  for i in tqdm(np.linspace(-2 * np.pi, 2 * np.pi, 1000)):
+    proc.sendline('4:' + str(i * 50) + ' ' + str(np.sin(i) * 50))
 
   time.sleep(5)
 

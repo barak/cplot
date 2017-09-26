@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -14,37 +13,39 @@ import qualified Pipes.ByteString                 as P
 
 import           Events
 import           Model
+import           Model.Frame
 import           View
 
 
 main :: IO ()
 main = do
   putStrLn "\nCtrl-D to quit"
-  model <- initializeModel <$> newTVarIO []
-  _   <- forkIO $ runGloss model
-  runEffect $ P.stdin >-> updatePlotData (plotData model)
+  model <- initializeModel
+
+  _ <- forkIO $ runGloss model
+  runEffect $ P.stdin >-> updateFrameData (frames model)
 
 --------------------------------------------------------------------------------
 
-initPlotData :: IO PlotData
-initPlotData = newTVarIO []
-
-addData :: (Float, Float) -> PlotData -> STM ()
+addData :: (Float, Float) -> FrameData -> STM ()
 addData a = flip modifyTVar' (a:)
 
-updatePlotData :: PlotData -> Consumer P.ByteString IO ()
-updatePlotData dat = forever $ do
-  raw <- await
-  let Right point = parsePoint raw  -- need proper error handling later
-  lift $ atomically $ addData point dat
+updateFrameData :: [Frame] -> Consumer P.ByteString IO ()
+updateFrameData fs =
+  forever $ do
+    raw <- await
+    let Right (ix, point) = parsePoint raw
+    lift $ atomically $ addData point (frameData $ fs !! (ix - 1))
 
-parsePoint :: P.ByteString -> Either String (Float, Float)
+parsePoint :: P.ByteString -> Either String (Int, (Float, Float))
 parsePoint pt = flip parseOnly pt $ do
+  frame <- decimal
+  _     <- char ':'
   x <- double
   skipSpace
   y <- double
   endOfLine
-  return (realToFrac x, realToFrac y)
+  return (frame, (realToFrac x, realToFrac y))
 
 runGloss :: Model -> IO ()
 runGloss model =

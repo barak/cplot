@@ -1,39 +1,46 @@
 module Model
     ( Model(..)
-    , PlotData
+    , FrameData
     , updateModel
     , initializeModel
     ) where
 
 import           Control.Concurrent.STM
+import           Control.Monad
 import           Data.Set                         (Set)
 import qualified Data.Set                         as Set
 import           Graphics.Gloss.Interface.IO.Game
 
+import           Model.Frame
 
-type PlotData = TVar [(Float, Float)]
 
 data Model = Model
-  { picture        :: Picture
+  { frames         :: [Frame]
+  , offset         :: Int
   , windowSize     :: (Int, Int)
-  , zoom           :: Double
   , cursorLoc      :: (Double, Double)
-  , buttonsPressed :: Set Key
   , clickLoc       :: (Float, Float)
-  , plotData       :: PlotData
+  , buttonsPressed :: Set Key
   }
 
 
-initializeModel :: PlotData -> Model
-initializeModel dat =
-  Model
-    { picture        = Blank
-    , windowSize     = (0, 0)
-    , zoom           = 0.0
-    , cursorLoc      = (0.0, 0.0)
+initializeModel :: IO Model
+initializeModel = do
+  -- stick with 4 till we have a tiling algorithm
+  [d1, d2, d3, d4] <- replicateM 4 (newTVarIO [])
+  return Model
+    { frames =
+        -- hard coded for testing
+        [ Frame d1 (-200, 150)  (0, 0) (400 - 30, 300 - 30) Blank
+        , Frame d2 (200, 150)   (0, 0) (400 - 30, 300 - 30) Blank
+        , Frame d3 (-200, -150) (0, 0) (400 - 30, 300 - 30) Blank
+        , Frame d4 (200, -150)  (0, 0) (400 - 30, 300 - 30) Blank
+        ]
+    , offset         = 30
+    , windowSize     = (800, 600)
+    , cursorLoc      = (0, 0)
+    , clickLoc       = (0, 0)
     , buttonsPressed = Set.empty
-    , clickLoc       = (0.0, 0.0)
-    , plotData       = dat
     }
 
 updateModel :: Float -> Model -> IO Model

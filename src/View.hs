@@ -6,21 +6,31 @@ import           Control.Concurrent.STM
 import           Graphics.Gloss.Interface.IO.Game
 
 import           Model
+import           Model.Frame
 import           View.Axes
+import           Utils
 
-offset :: Num a => a
-offset = 30
 
 drawModel :: Model -> IO Picture
-drawModel model = do
-  let
-    (width, height) = windowSize model
-    (ox, oy)        = (-width `div` 2 + offset, -height `div` 2 + offset)
-    (ox', oy')      = (realToFrac ox, realToFrac oy)
+drawModel model = Pictures <$> mapM drawFrame (frames model)
 
-  dat <- readTVarIO (plotData model)
-  return $ Pictures $
-    mconcat
-      [ [ Translate (x + ox') (y + oy') $ circleSolid 2 | (x, y) <- dat ]
-      , [ mkAxes (width, height) ]
-      ]
+drawFrame :: Frame -> IO Picture
+drawFrame frame = do
+  let
+    (w, h)      = r2f $ frameDims frame
+    (ox, oy)    = r2f $ frameOrigin frame
+    frameAxes   = mkAxes frame
+    frameBorder = mkBorder frame
+
+  dat <- readTVarIO (frameData frame)
+
+  return $ Pictures
+    [ frameAxes
+    , frameBorder
+    , Pictures
+        [ Translate (x + ox) (y + oy) $ circleSolid 2
+        | (x, y) <- dat
+        , -w / 2 < x && x < w / 2
+        , -h / 2 < y && y < h / 2
+        ]
+    ]
