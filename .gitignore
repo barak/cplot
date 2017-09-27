@@ -1,6 +1,12 @@
 .stack-work/
 *.aux
+*.fdb_latexmk
+*.fls
+*.hi
 *.log
+*.o
 *.synctex.gz
 *.out
+*.pdf
 _minted-*
+/cplot
