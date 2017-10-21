@@ -3,7 +3,7 @@ extra-package-dbs: []
 packages:
 - .
 extra-deps:
-- Chart-gtk-1.8.2
-- glade-0.13.1
-- plots-0.1.0.2
-resolver: lts-9.5
+- frpnow-0.18
+- frpnow-gtk3-0.2.0
+- megaparsec-6.2.0
+resolver: lts-9.9

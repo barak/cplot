@@ -1,8 +1,10 @@
 module Utils
-    ( r2f
+    ( takeEvery
     ) where
 
-import Control.Arrow ((***))
-
-r2f :: (Real a, Fractional b) => (a, a) -> (b, b)
-r2f = realToFrac *** realToFrac
+-- | potentially helpful for simple data decimation
+takeEvery :: Int -> [a] -> [a]
+takeEvery n xs =
+  case drop (n - 1) xs of
+    []     -> []
+    (y:ys) -> y : takeEvery n ys
