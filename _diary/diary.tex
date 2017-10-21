@@ -17,10 +17,10 @@
 \usepackage{hyperref}
 \usepackage{xcolor}
 \hypersetup{
-	colorlinks,
-	linkcolor={red!50!black},
-	citecolor={blue!50!black},
-	urlcolor={blue!80!black}
+  colorlinks,
+  linkcolor={red!50!black},
+  citecolor={blue!50!black},
+  urlcolor={blue!80!black}
 }
 
 % Fonts
@@ -35,35 +35,50 @@
 \date{}
 
 \begin{document}
-	\maketitle
-	
-	\section*{2017-09-21}
-	
-	Pretty much decided to use the `pipes' library for data streaming. As for graphics packages, so far we have:
-	
-	% add links to these
-	\begin{itemize}
-		\item gloss
-		\item dynamic-plot
-		\item dynamic-graph
-		\item Chart
-		\item diagrams
-		\item typed-spreadsheet
-		\item plain OpenGL bindings
-	\end{itemize}
-	
-	Going ahead with using gloss, mainly for ease of use (esp. since I have no prior background in any kind of graphics programming).
-	
-	\section*{2017-09-22}
-	
-	Decided to use Haskell's STM library to handle shared mutable state between gloss and the rest of the program. A gloss process is kicked-off with access to a TVar, which is modified by a pipe that continuously reads data from stdin (one line at a time). All it does, currently, is plot a stream of $ x,y $-coordinates onto a blank, white canvas.
-	
-	\section*{2017-09-24 --- 2017-09-25}
-	
-	On a new branch, \verb|anim->play| (which was, in hindsight, not a very good name for a branch), began the migration from the animateIO function to the playIO function to allow for custom event handling, which is no doubt needed. This lead to creating a barebones MVC-style backend, which should allow for much more complex features to be added in the future.
-	
-	\section*{2017-09-26}
-	
-	Merged \verb|anim->play| with \verb|master|. Work has begun on a new branch, \verb|axes|. This will deal primarily with drawing the axes, although it may end up involving writing a more robust view framework. Inside the viewport, you can have any number of `frames', which are distinct viewing areas, each having their own dataset, zoom level, styles, etc.
-	
+    \maketitle
+
+    \section*{2017-09-21}
+
+    Pretty much decided to use the `pipes' library for data streaming. As for graphics packages, so far we have:
+
+    % add links to these
+    \begin{itemize}
+        \item gloss
+        \item dynamic-plot
+        \item dynamic-graph
+        \item Chart
+        \item diagrams
+        \item typed-spreadsheet
+        \item plain OpenGL bindings
+    \end{itemize}
+
+    Going ahead with using gloss, mainly for ease of use (esp. since I have no prior background in any kind of graphics programming).
+
+    \section*{2017-09-22}
+
+    Decided to use Haskell's STM library to handle shared mutable state between gloss and the rest of the program. A gloss process is kicked-off with access to a TVar, which is modified by a pipe that continuously reads data from stdin (one line at a time). All it does, currently, is plot a stream of $ x,y $-coordinates onto a blank, white canvas.
+
+    \section*{2017-09-24 --- 2017-09-25}
+
+    On a new branch, \verb|anim->play| (which was, in hindsight, not a very good name for a branch), began the migration from the animateIO function to the playIO function to allow for custom event handling, which is no doubt needed. This lead to creating a barebones MVC-style backend, which should allow for much more complex features to be added in the future.
+
+    \section*{2017-09-26}
+
+    Merged \verb|anim->play| with \verb|master|. Work has begun on a new branch, \verb|axes|. This will deal primarily with drawing the axes, although it may end up involving writing a more robust view framework. Inside the viewport, you can have any number of `frames', which are distinct viewing areas, each having their own dataset, zoom level, styles, etc.
+
+    \section*{2017-10-21}
+
+    After lots of quiet experimentation, cplot now uses
+    \begin{itemize}
+        \item gtk3 and frpnow as GUI backend
+        \item Chart library for defining charts
+        \item Cairo for rendering charts to gtk3 widgets
+    \end{itemize}
+    Multiple other options were explored:
+    \begin{itemize}
+        \item External JS libs for charting (chart, plotly, epoch), communicating with a Haskell process via websockets
+        \item HaskellR
+        \item Some other arbitrary external process communicating via zeromq / nanomsg or some other messaging protocol
+    \end{itemize}
+    All had multiple problems that were more or less irreconcilable given the aim of this project, but importantly they were all a bit too slow for fast real-time data visualisation. The current approach (modulo a better system for managing large amounts of data) is vastly more efficient than any other approach attempted so far.
 \end{document}
