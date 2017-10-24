@@ -40,3 +40,7 @@ executable cplot
                      , megaparsec
                      , attoparsec
                      , dlist
+                     , optparse-applicative
+                     , lifted-async
+                     , stm
+                     , data-default
