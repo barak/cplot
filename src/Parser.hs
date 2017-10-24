@@ -1,5 +1,6 @@
 module Parser
   ( point
+  , parseErrorPretty
   ) where
 
 import           Control.Applicative        (empty)

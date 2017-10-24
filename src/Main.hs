@@ -54,7 +54,7 @@ main = runNowGTK $ do
       forever $ do
         raw <- await
         case Parser.point raw of
-          Left _  -> yield Nothing
+          Left e  -> liftIO (putStr $ Parser.parseErrorPretty e) >> yield Nothing
           Right p -> yield (Just p)
 
     updateRefs :: MonadIO m => Consumer (Maybe (Double, Double)) m ()
