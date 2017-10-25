@@ -15,8 +15,12 @@ cabal-version:       >=1.10
 
 executable cplot
   hs-source-dirs:      src
-  other-modules:       Chart
+  other-modules:       App
+                     , App.Types
+                     , Chart
+                     , Chart.Types
                      , Parser
+                     , Options
                      , Utils
   main-is:             Main.hs
   ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N
@@ -26,8 +30,6 @@ executable cplot
                      , Chart-cairo
                      , gtk3
                      , lens
-                     , frpnow
-                     , frpnow-gtk3
                      , mtl
                      , text
                      , bytestring

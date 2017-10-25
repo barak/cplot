@@ -14,9 +14,9 @@ import           Graphics.Rendering.Chart.Backend.Cairo (defaultEnv, runBackend)
 --      - AxisScaling [Linear|Log|...]
 --      - Chart.RectSize (size of the chart)
 --      - dataset ioref? not sure where exactly the best place to put this is
-renderChart :: [[(Double, Double)]] -> Cairo.Render ()
-renderChart dat = void $ runBackend (defaultEnv Chart.bitmapAlignmentFns)
-                                    (Chart.render chart (800, 600))
+renderChart :: [[(Double, Double)]] -> Chart.RectSize -> Cairo.Render ()
+renderChart dat dims = void $ runBackend (defaultEnv Chart.bitmapAlignmentFns)
+                                         (Chart.render chart dims)
   where
     chart :: Chart.Renderable ()
     chart = Chart.toRenderable $ do
