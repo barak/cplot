@@ -5,31 +5,13 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE TemplateHaskell            #-}
 
--- Should use the default class, messy to expose this much of each data type.
--- At least smart constructors would be more manageable
-module App.Types
-  ( App(..)
-  , AppEnv(AppEnv)
-  , AppConfig(..)
-  , AppState(AppState)
-  , HasAppOptions
-  , HasAppConfig
-  , HasAppState
-  , HasAppLogger
-
-  -- AppEnv lenses
-  , appOptions
-  , appConfig
-  , appState
-  , appLogger
-
-  -- AppState lenses
-  , charts
-  ) where
+module App.Types where
 
 import           Chart.Types          (Chart)
 import           Control.Lens
-import           Control.Monad.Reader (MonadIO, MonadReader, ReaderT)
+import           Control.Monad.Reader
+import           Data.Default
+import           Data.IORef           (IORef)
 import           Options
 
 
@@ -49,8 +31,17 @@ data AppConfig = AppConfig
 
 -- | 'Global' application state with components you can change (safely)
 data AppState = AppState
-  { _charts :: [Chart] }
+  { _chartRefs :: [IORef Chart] }
 
 makeFieldsNoPrefix ''AppEnv
 makeLenses ''AppConfig
 makeLenses ''AppState
+
+--------------------------------------------------------------------------------
+-- DEFAULT INSTANCES
+
+instance Default AppConfig where
+  def = AppConfig
+
+instance Default AppState where
+  def = AppState { _chartRefs = [] }

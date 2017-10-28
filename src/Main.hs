@@ -8,7 +8,7 @@ import           Control.Monad            (void)
 import           Control.Monad.Reader
 
 import qualified Control.Concurrent       as CC
-import qualified Data.DList               as DList
+import           Data.Default             (def)
 import           Data.IORef               (IORef)
 import qualified Data.IORef               as IORef
 import qualified Graphics.Rendering.Cairo as Cairo
@@ -16,16 +16,16 @@ import           Graphics.UI.Gtk          (AttrOp ((:=)))
 import qualified Graphics.UI.Gtk          as Gtk
 
 import           Pipes
-import qualified Pipes.ByteString as P
+import qualified Pipes.ByteString         as P
 
-import           App.Types
+import           App
+import           Chart                    (Chart)
 import qualified Chart
-import           Chart.Types              (Chart (..), ChartData (..),
-                                           ChartType (..), chartData)
 import           Options                  (AppOptions)
 import qualified Options
 import qualified Parser
 import qualified Utils
+
 
 main :: IO ()
 main = do
@@ -34,32 +34,36 @@ main = do
   CC.forkIO $ runApp appPipe env
   runGtkApp appGtk env
 
-runApp :: App a -> AppEnv -> IO ()
-runApp app = void . runReaderT (unApp app)
-
 runGtkApp :: App a -> AppEnv -> IO ()
 runGtkApp app env = Gtk.initGUI >> runApp app env >> Gtk.mainGUI
 
--- this should be taking advantage of the default class
 createEnvironment :: AppOptions -> IO AppEnv
 createEnvironment opts = do
-  chartList <- forM (opts ^. Options.chartTypes) $ \ct -> do
-    redrawRef <- IORef.newIORef False
-    datasetRef <- case ct of
-      Line       -> IORef.newIORef [LineData DList.empty]
-      Scatter    -> IORef.newIORef [ScatterData DList.empty]
-      TimeSeries -> error "not yet implemented"
-    return $ Chart "sample chart" datasetRef redrawRef
+  chartRefList <- forM (view Options.chartTypes opts) $ \subchartTypes -> do
+    let
+      -- TODO: ↓↓ this doesn't utilise the chart types
+      subcharts =
+        [ Chart.label   .~ "label"
+        $ Chart.dataset .~ def
+        $ def
+        | _ <- subchartTypes
+        ]
 
-  return $ AppEnv opts AppConfig (AppState chartList) putStrLn
+      chart
+        = Chart.title     .~ "chart title"
+        $ Chart.subcharts .~ subcharts
+        $ def
+
+    IORef.newIORef chart
+
+  return $ newAppEnv opts def (def & chartRefs .~ chartRefList) putStrLn
 
 appPipe :: App ()
 appPipe = runEffect $ P.stdin >-> parsePoint >-> updateRefs
 
--- really wish gtk3 functions used MonadIO
 appGtk :: App ()
 appGtk = do
-  chartList <- view $ appState . charts
+  chartRefList <- view $ appState . chartRefs
 
   liftIO $ do
     mainWindow <- Gtk.windowNew
@@ -75,12 +79,12 @@ appGtk = do
     Gtk.gridSetRowHomogeneous grid True
     Gtk.gridSetColumnHomogeneous grid True
 
-    let packing = Utils.packToSquare (length chartList)
-    canvases <- forM (zip packing chartList) $ \((x,y,s), chart) -> do
+    let packing = Utils.packToSquare (length chartRefList)
+    canvases <- forM (zip packing chartRefList) $ \((x,y,s), chart) -> do
       chartCanvas <- Gtk.drawingAreaNew
 
-      -- This allows you to increase the size of the window, but not decrease
-      -- it, which is utterly bizarre.
+      -- FIXME: This allows you to increase the size of the window, but not
+      -- decrease it, which is utterly bizarre.
       chartCanvas `Gtk.on` Gtk.configureEvent $ do
         Gtk.Rectangle _ _ w h <- liftIO $ Gtk.widgetGetAllocation chartCanvas
         liftIO $ Gtk.widgetSetSizeRequest chartCanvas w h
@@ -109,24 +113,14 @@ bindQuit window =
   void $ window `Gtk.on` Gtk.deleteEvent
        $ liftIO Gtk.mainQuit >> return False
 
--- probably not worth refactoring to use the app env
-updateCanvas :: MonadIO m => Chart -> Gtk.DrawingArea -> m ()
-updateCanvas chart canvas =
-  liftIO $ do
-    datasets <- IORef.readIORef (chart ^. chartData)
+updateCanvas :: MonadIO m => IORef Chart -> Gtk.DrawingArea -> m ()
+updateCanvas chartRef canvas = liftIO $ do
+  chart <- IORef.readIORef chartRef
+  Gtk.Requisition w h <- Gtk.widgetSizeRequest canvas
+  let renderable = Chart.renderChart chart (fromIntegral w, fromIntegral h)
 
-    let ds = flip map datasets $ \dataset ->
-          case dataset of
-            LineData       d -> d
-            ScatterData    d -> d
-            TimeSeriesData _ -> error "not implemented"
-
-    Gtk.Requisition w h <- Gtk.widgetSizeRequest canvas
-    let renderable = Chart.renderChart (map DList.toList ds)
-                                       (fromIntegral w, fromIntegral h)
-
-    Just win <- Gtk.widgetGetWindow canvas
-    Gtk.renderWithDrawWindow win renderable
+  Just win <- Gtk.widgetGetWindow canvas
+  Gtk.renderWithDrawWindow win renderable
 
 requestRedrawCanvas :: Gtk.DrawingArea -> IO ()
 requestRedrawCanvas canvas = Gtk.postGUIAsync $ Gtk.widgetQueueDraw canvas
@@ -143,15 +137,12 @@ parsePoint = forever $ do
     Left e  -> liftIO $ logger $ Parser.parseErrorPretty e
     Right p -> yield p
 
+-- | for now, just add the point to all subcharts
 updateRefs :: (MonadIO m, MonadReader env m, HasAppState env AppState)
            => Consumer (Double, Double) m ()
 updateRefs = forever $ do
   point <- await
-  allCharts <- view $ appState . charts
-  liftIO $ forM_ allCharts $ \chart -> do
-    let ref = chart ^. chartData
-    [dataset] <- IORef.readIORef ref
-    case dataset of
-      LineData d       -> IORef.writeIORef ref [LineData $ DList.snoc d point]
-      ScatterData d    -> IORef.writeIORef ref [LineData $ DList.snoc d point]
-      TimeSeriesData _ -> error "not yet implemented"
+  refs <- view $ appState . chartRefs
+  liftIO $ forM_ refs $ \chartRef ->
+    IORef.modifyIORef chartRef
+      (Chart.subcharts . traverse . Chart.dataset %~ Chart.addPoint point)

@@ -3,7 +3,5 @@ extra-package-dbs: []
 packages:
 - .
 extra-deps:
-- frpnow-0.18
-- frpnow-gtk3-0.2.0
 - megaparsec-6.2.0
 resolver: lts-9.9

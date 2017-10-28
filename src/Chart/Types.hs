@@ -1,26 +1,24 @@
 {-# LANGUAGE TemplateHaskell #-}
 
--- Should use the default class, messy to expose this much of each data type.
--- At least smart constructors would be more manageable
-module Chart.Types
-  ( Chart(Chart)
-  , ChartType(..)
-  , ChartData(..)
-
-  -- Chart lenses
-  , chartTitle
-  , chartData
-  , needsRedraw
-  ) where
+module Chart.Types where
 
 import           Control.Lens
-import           Data.DList   (DList)
-import           Data.IORef   (IORef)
+import           Data.Default
+import           Data.DList               (DList)
+import qualified Data.DList               as DList
+import qualified Graphics.Rendering.Chart as Chart
+
 
 data Chart = Chart
-  { _chartTitle  :: String
-  , _chartData   :: IORef [ChartData]
-  , _needsRedraw :: IORef Bool
+  { _title     :: String
+  , _subcharts :: [Subchart]
+  , _rectSize  :: Chart.RectSize
+  }
+
+-- | Represents a single data/style group inside a chart
+data Subchart = Subchart
+  { _label   :: String
+  , _dataset :: ChartData
   }
 
 data ChartType
@@ -34,3 +32,23 @@ data ChartData
   | TimeSeriesData (DList Double)
 
 makeLenses ''Chart
+makeLenses ''Subchart
+
+--------------------------------------------------------------------------------
+-- DEFAULT INSTANCES
+
+instance Default Chart where
+  def = Chart
+    { _title     = "chart"
+    , _subcharts = []
+    , _rectSize  = (0, 0)
+    }
+
+instance Default Subchart where
+  def = Subchart
+    { _label   = "label"
+    , _dataset = def
+    }
+
+instance Default ChartData where
+  def = LineData DList.empty
