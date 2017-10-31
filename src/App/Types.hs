@@ -7,16 +7,17 @@
 
 module App.Types where
 
-import           Chart.Types          (Chart)
+import           Chart.Types            (Chart)
+import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Monad.Reader
 import           Data.Default
-import           Data.IORef           (IORef)
+import           Data.IORef             (IORef)
 import           Options
 
 
 newtype App a = App { unApp :: ReaderT AppEnv IO a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader AppEnv)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader AppEnv, MonadThrow)
 
 -- | Core application data type
 data AppEnv = AppEnv

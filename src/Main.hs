@@ -3,14 +3,15 @@
 
 module Main where
 
+import qualified Control.Concurrent       as CC
+import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Monad            (void)
 import           Control.Monad.Reader
-
-import qualified Control.Concurrent       as CC
 import           Data.Default             (def)
 import           Data.IORef               (IORef)
 import qualified Data.IORef               as IORef
+
 import qualified Graphics.Rendering.Cairo as Cairo
 import           Graphics.UI.Gtk          (AttrOp ((:=)))
 import qualified Graphics.UI.Gtk          as Gtk
@@ -26,14 +27,12 @@ import qualified Options
 import qualified Parser
 import qualified Utils
 
-import System.IO (hPutStrLn, stderr)
-
 
 main :: IO ()
 main = do
   opts <- liftIO Options.parseArgs
   env <- createEnvironment opts
-  CC.forkIO $ runApp appPipe env
+  CC.forkIO $ runApp appPipe env `onException` Gtk.postGUIAsync Gtk.mainQuit
   runGtkApp appGtk env
 
 runGtkApp :: App a -> AppEnv -> IO ()
@@ -130,14 +129,19 @@ requestRedrawCanvas canvas = Gtk.postGUIAsync $ Gtk.widgetQueueDraw canvas
 --------------------------------------------------------------------------------
 -- PIPES
 
--- would prefer to remove the MonadIO constraint from this if possible, see
--- pipes-safe for exception handling in pipes.
-parsePoint :: (MonadIO m, MonadReader env m)
-           => Pipe P.ByteString (Double, Double) m ()
+data AppException
+  = NoParse String
+
+instance Show AppException where
+  show (NoParse e) = e
+
+instance Exception AppException
+
+parsePoint :: MonadThrow m => Pipe P.ByteString (Double, Double) m ()
 parsePoint = forever $ do
   raw <- await
   case Parser.point raw of
-    Left e  -> liftIO $ hPutStrLn stderr $ Parser.parseErrorPretty e
+    Left e  -> throw $ NoParse (Parser.parseErrorPretty e)
     Right p -> yield p
 
 -- | for now, just add the point to all subcharts
