@@ -21,10 +21,12 @@ import qualified Pipes.ByteString         as P
 import           App
 import           Chart                    (Chart)
 import qualified Chart
-import           Options                  (AppOptions)
+import           Options                  (AppOptions, chartTypes)
 import qualified Options
 import qualified Parser
 import qualified Utils
+
+import System.IO (hPutStrLn, stderr)
 
 
 main :: IO ()
@@ -39,7 +41,7 @@ runGtkApp app env = Gtk.initGUI >> runApp app env >> Gtk.mainGUI
 
 createEnvironment :: AppOptions -> IO AppEnv
 createEnvironment opts = do
-  chartRefList <- forM (view Options.chartTypes opts) $ \subchartTypes -> do
+  chartRefList <- forM (opts ^. chartTypes) $ \subchartTypes -> do
     let
       -- TODO: ↓↓ this doesn't utilise the chart types
       subcharts =
@@ -56,14 +58,14 @@ createEnvironment opts = do
 
     IORef.newIORef chart
 
-  return $ newAppEnv opts def (def & chartRefs .~ chartRefList) putStrLn
+  return $ newAppEnv opts def (def & chartRefs .~ chartRefList)
 
 appPipe :: App ()
 appPipe = runEffect $ P.stdin >-> parsePoint >-> updateRefs
 
 appGtk :: App ()
 appGtk = do
-  chartRefList <- view $ appState . chartRefs
+  chartRefList <- view chartRefs
 
   liftIO $ do
     mainWindow <- Gtk.windowNew
@@ -128,21 +130,22 @@ requestRedrawCanvas canvas = Gtk.postGUIAsync $ Gtk.widgetQueueDraw canvas
 --------------------------------------------------------------------------------
 -- PIPES
 
-parsePoint :: (MonadIO m, MonadReader env m, HasAppLogger env (String -> IO ()))
+-- would prefer to remove the MonadIO constraint from this if possible, see
+-- pipes-safe for exception handling in pipes.
+parsePoint :: (MonadIO m, MonadReader env m)
            => Pipe P.ByteString (Double, Double) m ()
 parsePoint = forever $ do
   raw <- await
-  logger <- view appLogger
   case Parser.point raw of
-    Left e  -> liftIO $ logger $ Parser.parseErrorPretty e
+    Left e  -> liftIO $ hPutStrLn stderr $ Parser.parseErrorPretty e
     Right p -> yield p
 
 -- | for now, just add the point to all subcharts
-updateRefs :: (MonadIO m, MonadReader env m, HasAppState env AppState)
+updateRefs :: (MonadIO m, MonadReader env m, HasAppState env)
            => Consumer (Double, Double) m ()
 updateRefs = forever $ do
   point <- await
-  refs <- view $ appState . chartRefs
+  refs <- view chartRefs
   liftIO $ forM_ refs $ \chartRef ->
     IORef.modifyIORef chartRef
       (Chart.subcharts . traverse . Chart.dataset %~ Chart.addPoint point)

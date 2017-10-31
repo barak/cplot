@@ -3,9 +3,11 @@
 
 module Options
   ( AppOptions
+  , HasAppOptions
   , parseArgs
 
   -- AppOptions lenses
+  , appOptions
   , chartTypes
   ) where
 
@@ -23,7 +25,7 @@ import qualified Text.Megaparsec.Char as MP
 data AppOptions = AppOptions
   { _chartTypes :: [[ChartType]] }
 
-makeLenses ''AppOptions
+makeClassy ''AppOptions
 
 --------------------------------------------------------------------------------
 -- OPTIONS PARSER

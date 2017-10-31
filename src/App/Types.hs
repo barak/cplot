@@ -20,10 +20,9 @@ newtype App a = App { unApp :: ReaderT AppEnv IO a }
 
 -- | Core application data type
 data AppEnv = AppEnv
-  { _appOptions :: AppOptions       -- ^ Command line options
-  , _appConfig  :: AppConfig        -- ^ Global app configuration
-  , _appState   :: AppState         -- ^ Global application state
-  , _appLogger  :: String -> IO ()  -- ^ Logging function
+  { _options :: AppOptions  -- ^ Command line options
+  , _config  :: AppConfig   -- ^ Global app configuration
+  , _state   :: AppState    -- ^ Global application state
   }
 
 -- | 'Global' config set at runtime by a .conf or .yaml file
@@ -33,9 +32,13 @@ data AppConfig = AppConfig
 data AppState = AppState
   { _chartRefs :: [IORef Chart] }
 
-makeFieldsNoPrefix ''AppEnv
-makeLenses ''AppConfig
-makeLenses ''AppState
+makeClassy ''AppEnv
+makeClassy ''AppConfig
+makeClassy ''AppState
+
+instance HasAppState   AppEnv where appState   = state
+instance HasAppConfig  AppEnv where appConfig  = config
+instance HasAppOptions AppEnv where appOptions = options
 
 --------------------------------------------------------------------------------
 -- DEFAULT INSTANCES

@@ -6,16 +6,14 @@ module App
   , HasAppOptions
   , HasAppConfig
   , HasAppState
-  , HasAppLogger
 
   , runApp
   , newAppEnv
 
   -- AppEnv lenses
-  , appOptions
-  , appConfig
-  , appState
-  , appLogger
+  , options
+  , config
+  , state
 
   -- AppState lenses
   , chartRefs
@@ -28,7 +26,7 @@ import           App.Types
 import           Options
 
 
-newAppEnv :: AppOptions -> AppConfig -> AppState -> (String -> IO ()) -> AppEnv
+newAppEnv :: AppOptions -> AppConfig -> AppState -> AppEnv
 newAppEnv = AppEnv
 
 runApp :: App a -> AppEnv -> IO ()
