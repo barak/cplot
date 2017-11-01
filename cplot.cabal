@@ -38,6 +38,9 @@ executable cplot
                      , pipes
                      , pipes-bytestring
                      , pipes-safe
+                     , conduit
+                     , conduit-combinators
+                     , conduit-extra
                      , safe-exceptions
                      , megaparsec
                      , attoparsec

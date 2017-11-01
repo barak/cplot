@@ -17,4 +17,4 @@ Time = np.linspace(0, len(signal) / len(channels) / fs,
 # only look at first channel for now
 for t, c in zip(Time, channels[0][:100000]):
     print(t, c, flush=True)
-    time.sleep(0.001)
+    #time.sleep(0.001)
