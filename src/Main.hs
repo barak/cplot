@@ -64,7 +64,11 @@ createEnvironment opts = do
   return $ newAppEnv opts def (def & chartRefs .~ chartRefList)
 
 conduit :: App ()
-conduit = runConduit $ stdinC $$ CB.lines =$ parsePoint =$ updateRefs
+conduit = runConduit
+        $ stdinC
+       $$ CB.lines
+      =$= parsePoint
+      =$= updateRefs
 
 appGtk :: App ()
 appGtk = do
@@ -142,25 +146,21 @@ instance Show AppException where
 instance Exception AppException
 
 parsePoint :: MonadThrow m => Conduit ByteString m (Double, Double)
-parsePoint = loop
-  where
-    loop = do
-      mrawString <- await
-      forM_ mrawString $ \rawString ->
-        case Parser.point rawString of
-          Left e  -> throw $ NoParse (Parser.parseErrorPretty e)
-          Right p -> yield p >> loop
+parsePoint = do
+  mrawString <- await
+  forM_ mrawString $ \rawString ->
+    case Parser.point rawString of
+      Left e  -> throw $ NoParse (Parser.parseErrorPretty e)
+      Right p -> yield p >> parsePoint
 
 -- | for now, just add the point to all subcharts
 updateRefs :: (MonadIO m, MonadReader env m, HasAppState env)
            => Consumer (Double, Double) m ()
-updateRefs = loop
-  where
-    loop = do
-      mpoint <- await
-      refs <- view chartRefs
-      forM_ mpoint $ \point -> do
-        liftIO $ forM_ refs $ \chartRef ->
-          IORef.modifyIORef chartRef
-            (Chart.subcharts . traverse . Chart.dataset %~ Chart.addPoint point)
-        loop
+updateRefs = do
+  mpoint <- await
+  refs <- view chartRefs
+  forM_ mpoint $ \point -> do
+    liftIO $ forM_ refs $ \chartRef ->
+      IORef.modifyIORef chartRef
+        (Chart.subcharts . traverse . Chart.dataset %~ Chart.addPoint point)
+    updateRefs
