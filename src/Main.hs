@@ -8,20 +8,16 @@ import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Monad            (void)
 import           Control.Monad.Reader
-import           Data.ByteString.Char8    (ByteString)
 import           Data.Default             (def)
 import           Data.IORef               (IORef)
 import qualified Data.IORef               as IORef
+import           Data.Text                (Text)
 
 import qualified Graphics.Rendering.Cairo as Cairo
 import           Graphics.UI.Gtk          (AttrOp ((:=)))
 import qualified Graphics.UI.Gtk          as Gtk
 
--- import           Pipes
--- import qualified Pipes.ByteString         as P
-
 import           Conduit
-import qualified Data.Conduit.Binary      as CB
 
 import           App
 import           Chart                    (Chart)
@@ -36,7 +32,7 @@ main :: IO ()
 main = do
   opts <- liftIO Options.parseArgs
   env <- createEnvironment opts
-  CC.forkIO $ runApp conduit env `onException` Gtk.postGUIAsync Gtk.mainQuit
+  CC.forkIO $ runApp inputStream env `onException` Gtk.postGUIAsync Gtk.mainQuit
   runGtkApp appGtk env
 
 runGtkApp :: App a -> AppEnv -> IO ()
@@ -63,12 +59,14 @@ createEnvironment opts = do
 
   return $ newAppEnv opts def (def & chartRefs .~ chartRefList)
 
-conduit :: App ()
-conduit = runConduit
-        $ stdinC
-       $$ CB.lines
-      =$= parsePoint
-      =$= updateRefs
+inputStream :: App ()
+inputStream = runConduit conduit
+  where
+    conduit = stdinC
+          =$= decodeUtf8C
+          =$= linesUnboundedC
+          =$= parsePoint
+          =$= updateRefs
 
 appGtk :: App ()
 appGtk = do
@@ -145,7 +143,7 @@ instance Show AppException where
 
 instance Exception AppException
 
-parsePoint :: MonadThrow m => Conduit ByteString m (Double, Double)
+parsePoint :: MonadThrow m => Conduit Text m (Double, Double)
 parsePoint = do
   mrawString <- await
   forM_ mrawString $ \rawString ->

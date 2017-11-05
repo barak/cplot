@@ -4,18 +4,16 @@ module Parser
   ) where
 
 import           Control.Applicative        (empty)
+import           Data.Scientific
+import           Data.Text                  (Text)
 import           Data.Void                  (Void)
 
-import           Data.Scientific
-
-import qualified Data.ByteString.Char8      as B
-
 import           Text.Megaparsec
-import           Text.Megaparsec.Byte
-import qualified Text.Megaparsec.Byte.Lexer as L
+import           Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char.Lexer as L
 
 
-type Parser = Parsec Void B.ByteString
+type Parser = Parsec Void Text
 
 sc :: Parser ()
 sc = L.space space1 empty empty
@@ -30,5 +28,5 @@ pointP :: Parser (Double, Double)
 pointP = p <$> signed <*> signed
   where p a b = (toRealFloat a, toRealFloat b)
 
-point :: B.ByteString -> Either (ParseError (Token B.ByteString) Void) (Double, Double)
+point :: Text -> Either (ParseError (Token Text) Void) (Double, Double)
 point = parse pointP ""
