@@ -91,4 +91,15 @@
     Most of the codebase is finally at a stage where I'm not deeply embarrassed for it being publicly viewable.
     
     Eventually got around to abstracting the chart API into its own module, so work on new features can begin very soon (see commit 8b72826 on master for details). Lens based functionality has also been improved (all instances of \verb|makeFields| have been changed to \verb|makeClassy|, seems to compose a lot better), and simple exception handling was added, so you don't have to mash Ctrl-C every time something goes wrong.
+    
+    \section*{2017-11-01}
+    
+    Fixed an issue with the behaviour of the stdin pipe from pipes-bytestring. It doesn't automatically chunk by by lines. Combined with the fact that we were throwing away parse errors, this caused a lot of strange behaviour:
+    \begin{itemize}
+        \item If the consumer blocked the producer, the producer would build a large multi-line buffer, which it would then send all at once through the pipeline: the parser would then parse the first line it saw, ignore the rest, and pipe it through to the consumer (this is why you would occasionally see what initially appeared to be a graphical glitch where certain data points were ignored and the inbetween was just connected with a straight line).
+        \item If the consumer happened to ask for data `too early,' it appeared the producer was perfectly happy to supply that data, meaning the program would occasionally have to parse garbled half-lines, which (as of the last patch) caused the program to crash.
+    \end{itemize}
+    For a hilarious demonstration of both issues, try the Python examples with no time delay on some commit before the pipes-bug merge with master.
+    
+    It seems pipes-text has the required capability to split a stream by lines (in fact it's probably a better idea, at least semantically, to use text over bytestring here), but currently the fix uses conduit and bytestrings. I'll be experimenting with different solutions before merging anything with master.
 \end{document}
