@@ -20,12 +20,14 @@ module Chart
   -- stuff from this module
   , renderChart
   , addPoint
+  , newDataset
   ) where
 
 import           Control.Lens
 import           Control.Monad                          (void)
 import           Data.Default                           (def)
 import qualified Data.DList                             as DList
+import           Data.Text                              (unpack)
 
 import qualified Graphics.Rendering.Chart               as Chart
 
@@ -50,7 +52,7 @@ renderChart chart rect =
     renderable = Chart.toRenderable layout
 
     layout
-      = Chart.layout_title .~ chart ^. title
+      = Chart.layout_title .~ unpack (chart ^. title)
       $ Chart.layout_plots .~ map plottableToPlot plots
       $ def
 
@@ -60,12 +62,12 @@ renderChart chart rect =
     makePlottable subchart =
       case view dataset subchart of
         LineData d -> MkPlottable
-          $ Chart.plot_lines_title  .~ subchart ^. label
+          $ Chart.plot_lines_title  .~ unpack (subchart ^. label)
           $ Chart.plot_lines_values .~ [DList.toList d]
           $ def
 
         ScatterData d -> MkPlottable
-          $ Chart.plot_points_title  .~ subchart ^. label
+          $ Chart.plot_points_title  .~ unpack (subchart ^. label)
           $ Chart.plot_points_values .~ DList.toList d
           $ def
 
@@ -76,3 +78,9 @@ addPoint p@(_, y) = \case
   LineData       d -> LineData       $ DList.snoc d p
   ScatterData    d -> ScatterData    $ DList.snoc d p
   TimeSeriesData d -> TimeSeriesData $ DList.snoc d y
+
+newDataset :: ChartType -> ChartData
+newDataset = \case
+  Line       -> LineData def
+  Scatter    -> ScatterData def
+  TimeSeries -> TimeSeriesData def

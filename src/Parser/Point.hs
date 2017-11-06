@@ -1,25 +1,14 @@
-module Parser
+module Parser.Point
   ( point
-  , parseErrorPretty
   ) where
 
-import           Control.Applicative        (empty)
 import           Data.Scientific
 import           Data.Text                  (Text)
 import           Data.Void                  (Void)
 
+import           Parser.Generic
 import           Text.Megaparsec
-import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-
-
-type Parser = Parsec Void Text
-
-sc :: Parser ()
-sc = L.space space1 empty empty
-
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme sc
 
 signed :: Parser Scientific
 signed = lexeme (L.signed sc L.scientific)

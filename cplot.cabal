@@ -19,7 +19,9 @@ executable cplot
                      , App.Types
                      , Chart
                      , Chart.Types
-                     , Parser
+                     , Parser.Generic
+                     , Parser.Point
+                     , Parser.Options
                      , Options
                      , Utils
   main-is:             Main.hs

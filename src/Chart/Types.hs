@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Chart.Types where
 
@@ -6,18 +7,19 @@ import           Control.Lens
 import           Data.Default
 import           Data.DList               (DList)
 import qualified Data.DList               as DList
+import           Data.Text                (Text)
 import qualified Graphics.Rendering.Chart as Chart
 
 
 data Chart = Chart
-  { _title     :: String
+  { _title     :: Text
   , _subcharts :: [Subchart]
   , _rectSize  :: Chart.RectSize
   }
 
 -- | Represents a single data/style group inside a chart
 data Subchart = Subchart
-  { _label   :: String
+  { _label   :: Text
   , _dataset :: ChartData
   }
 

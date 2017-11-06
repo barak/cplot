@@ -23,15 +23,15 @@ import           Conduit
 import           App
 import           Chart                    (Chart)
 import qualified Chart
-import           Options                  (AppOptions, chartTypes)
-import qualified Options
-import qualified Parser
+import           Options
+import qualified Parser.Generic           as Parser
+import qualified Parser.Point             as Parser
 import qualified Utils
 
 
 main :: IO ()
 main = do
-  opts <- liftIO Options.parseArgs
+  opts <- liftIO parseArgs
   env <- createEnvironment opts
   CC.forkIO $ runApp inputStream env `onException` Gtk.postGUIAsync Gtk.mainQuit
   runGtkApp appGtk env
@@ -41,23 +41,7 @@ runGtkApp app env = Gtk.initGUI >> runApp app env >> Gtk.mainGUI
 
 createEnvironment :: AppOptions -> IO AppEnv
 createEnvironment opts = do
-  chartRefList <- forM (opts ^. chartTypes) $ \subchartTypes -> do
-    let
-      -- TODO: ↓↓ this doesn't utilise the chart types
-      subcharts =
-        [ Chart.label   .~ "label"
-        $ Chart.dataset .~ def
-        $ def
-        | _ <- subchartTypes
-        ]
-
-      chart
-        = Chart.title     .~ "chart title"
-        $ Chart.subcharts .~ subcharts
-        $ def
-
-    IORef.newIORef chart
-
+  chartRefList <- mapM IORef.newIORef (opts ^. initialCharts)
   return $ newAppEnv opts def (def & chartRefs .~ chartRefList)
 
 inputStream :: App ()
@@ -109,7 +93,7 @@ appGtk = do
     -- each chart updates only when needed, and only at a specific frequency.
     CC.forkIO $ forever $ forM_ canvases $ \canvas -> do
       requestRedrawCanvas canvas
-      CC.threadDelay (1000000 `div` (30 * 4))
+      CC.threadDelay (1000000 `div` 30)
 
     Gtk.set mainWindow [ Gtk.containerChild := grid ]
 

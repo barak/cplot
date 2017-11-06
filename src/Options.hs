@@ -8,54 +8,44 @@ module Options
 
   -- AppOptions lenses
   , appOptions
-  , chartTypes
+  , initialCharts
   ) where
 
-import           Chart.Types          (ChartType (..))
-import           Control.Arrow        (left)
+import           Chart               (Chart)
+import           Control.Arrow       (left)
 import           Control.Lens
-import           Data.Monoid          ((<>))
-import qualified Data.Text            as T
-import           Data.Void            (Void)
+import           Data.Monoid         ((<>))
+import qualified Data.Text           as T
 import           Options.Applicative
-import qualified Text.Megaparsec      as MP
-import qualified Text.Megaparsec.Char as MP
+
+import qualified Parser.Generic      as MP
+import qualified Parser.Options      as MP
+import qualified Text.Megaparsec     as MP
 
 
 data AppOptions = AppOptions
-  { _chartTypes :: [[ChartType]] }
+  { _initialCharts :: [Chart] }
 
 makeClassy ''AppOptions
 
---------------------------------------------------------------------------------
--- OPTIONS PARSER
-
-type MParser = MP.Parsec Void T.Text
 
 parseArgs :: IO AppOptions
 parseArgs = execParser (info (helper <*> parseOptions)
                              (header "cplot"))
 
 parseOptions :: Parser AppOptions
-parseOptions = AppOptions <$> chartTypes'
+parseOptions = AppOptions <$> charts
   where
-    chartTypes' =
+    charts =
       some $ option chartReader $
         long "chart"
      <> short 'c'
-     <> help "line/scatter (up to four may be specified)"
+     <> help "[chart name] [subchart label] [line|scatter] [subchart label] ..."
 
 -- | Optparse specific ChartType parser
-chartReader :: ReadM [ChartType]
-chartReader = parsecReadM (some parseChartType)
+chartReader :: ReadM Chart
+chartReader = parsecReadM MP.parseChart
 
 -- | Transforms megaparsec parsers into optparse ReadM parsers
-parsecReadM :: MParser a -> ReadM a
+parsecReadM :: MP.Parser a -> ReadM a
 parsecReadM p = eitherReader (left MP.parseErrorPretty . MP.parse p "" . T.pack)
-
--- | megaparsec parser for ChartType
--- TODO: maybe write some TH to autogenerate this parser?
-parseChartType :: MParser ChartType
-parseChartType = (MP.string "line"    >> return Line)
-             <|> (MP.string "scatter" >> return Scatter)
-             <|> (MP.string "series"  >> return TimeSeries)
