@@ -12,6 +12,7 @@ import           Data.Default             (def)
 import           Data.IORef               (IORef)
 import qualified Data.IORef               as IORef
 import           Data.Text                (Text)
+import           Data.Void                (Void)
 
 import qualified Graphics.Rendering.Cairo as Cairo
 import           Graphics.UI.Gtk          (AttrOp ((:=)))
@@ -143,7 +144,7 @@ instance Show AppException where
 
 instance Exception AppException
 
-parsePoint :: MonadThrow m => Conduit Text m (Double, Double)
+parsePoint :: MonadThrow m => ConduitM Text (Double, Double) m ()
 parsePoint = do
   mrawString <- await
   forM_ mrawString $ \rawString ->
@@ -153,7 +154,7 @@ parsePoint = do
 
 -- | for now, just add the point to all subcharts
 updateRefs :: (MonadIO m, MonadReader env m, HasAppState env)
-           => Consumer (Double, Double) m ()
+           => ConduitM (Double, Double) Void m ()
 updateRefs = do
   mpoint <- await
   refs <- view chartRefs
