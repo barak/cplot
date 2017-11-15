@@ -21,13 +21,15 @@ all libs used in this project. As a result, the Makefile won't work.
 Try
 
 ````shell
-$ yes | gawk '@load "time"; {sleep(0.2); print NR, NR*sqrt(NR)}' | ./cplot -c line
+$ yes | gawk '@load "time"; {sleep(0.2); print "chart:", NR, NR*sqrt(NR)}' | ./cplot -c "chart data line"
 ````
+
+`chart` is the chart name, `data` is the name of the specific dataset on the chart.
 
 If this produces no output, you may need to flush stdout after each print.
 
 ```shell
-$ yes | gawk '@load "time"; {sleep(0.2); print NR, NR*sqrt(NR); fflush()}' | ./cplot -c line
+$ yes | gawk '@load "time"; {sleep(0.2); print "chart:", NR, NR*sqrt(NR); fflush()}' | ./cplot -c "chart data line"
 ```
 
 ## License

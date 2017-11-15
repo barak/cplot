@@ -1,7 +1,7 @@
 module Utils
-    ( takeEvery
-    , packToSquare
-    ) where
+  ( takeEvery
+  , packToSquare
+  ) where
 
 -- | potentially helpful for simple data decimation
 takeEvery :: Int -> [a] -> [a]

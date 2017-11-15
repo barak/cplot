@@ -3,30 +3,22 @@
 
 module Main where
 
-import qualified Control.Concurrent       as CC
+import qualified Control.Concurrent     as CC
 import           Control.Exception.Safe
 import           Control.Lens
-import           Control.Monad            (void)
+import           Control.Monad          (void)
 import           Control.Monad.Reader
-import           Data.Default             (def)
-import           Data.IORef               (IORef)
-import qualified Data.IORef               as IORef
-import           Data.Text                (Text)
-import           Data.Void                (Void)
+import           Data.Default           (def)
+import           Data.IORef             (IORef)
+import qualified Data.IORef             as IORef
 
-import qualified Graphics.Rendering.Cairo as Cairo
-import           Graphics.UI.Gtk          (AttrOp ((:=)))
-import qualified Graphics.UI.Gtk          as Gtk
-
-import           Conduit
+import           Graphics.UI.Gtk        (AttrOp ((:=)))
+import qualified Graphics.UI.Gtk        as Gtk
 
 import           App
-import           Chart                    (Chart)
+import           Chart                  (Chart)
 import qualified Chart
 import           Options
-import qualified Parser.Generic           as Parser
-import           Parser.Point
--- import qualified Parser.Point             as Parser
 import qualified Utils
 
 
@@ -44,15 +36,6 @@ createEnvironment :: AppOptions -> IO AppEnv
 createEnvironment opts = do
   chartRefList <- mapM IORef.newIORef (opts ^. initialCharts)
   return $ newAppEnv opts def (def & chartRefs .~ chartRefList)
-
-inputStream :: App ()
-inputStream = runConduit conduit
-  where
-    conduit = stdinC
-          =$= decodeUtf8C
-          =$= linesUnboundedC
-          =$= parsePoint
-          =$= updateRefs
 
 appGtk :: App ()
 appGtk = do
@@ -117,36 +100,3 @@ updateCanvas chartRef canvas = liftIO $ do
 
 requestRedrawCanvas :: Gtk.DrawingArea -> IO ()
 requestRedrawCanvas canvas = Gtk.postGUIAsync $ Gtk.widgetQueueDraw canvas
-
---------------------------------------------------------------------------------
--- PIPES
-
-data AppException
-  = NoParse String
-
-instance Show AppException where
-  show (NoParse e) = e
-
-instance Exception AppException
-
-parsePoint :: MonadThrow m => ConduitM Text Message m ()
-parsePoint = do
-  mrawString <- await
-  forM_ mrawString $ \rawString ->
-    case parseMessage rawString of
-      Left e  -> throw $ NoParse (Parser.parseErrorPretty e)
-      Right p -> yield p >> parsePoint
-
--- | for now, just add the point to all subcharts
-updateRefs :: (MonadIO m, MonadReader env m, HasAppState env)
-           => ConduitM Message Void m ()
-updateRefs = do
-  mmsg <- await
-  refs <- view chartRefs
-  forM_ mmsg $ \msg -> do
-    liftIO $ forM_ refs $ \chartRef -> do
-      chart <- IORef.readIORef chartRef
-      when (chart ^. Chart.title == msg ^. chartID) $
-        IORef.writeIORef chartRef $
-          chart & (Chart.subcharts . traverse . Chart.dataset %~ Chart.addPoint (msg ^. msgPoint))
-    updateRefs

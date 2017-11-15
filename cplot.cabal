@@ -38,11 +38,8 @@ executable cplot
                      , scientific
                      , cairo
                      , pipes
-                     , pipes-bytestring
-                     , pipes-safe
-                     , conduit
-                     , conduit-combinators
-                     , conduit-extra
+                     , pipes-text
+                     , pipes-group
                      , safe-exceptions
                      , megaparsec
                      , attoparsec

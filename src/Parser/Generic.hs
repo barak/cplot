@@ -6,8 +6,8 @@ module Parser.Generic
   , parseErrorPretty
   ) where
 
-import Data.Char
 import           Control.Applicative        (empty)
+import           Data.Char
 import           Data.Text                  (Text, pack)
 import           Data.Void                  (Void)
 
