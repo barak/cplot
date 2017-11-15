@@ -1,21 +1,42 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Parser.Point
-  ( point
+  ( Message
+  , parseMessage
+
+  -- Message lenses
+  , chartID
+  , msgPoint
   ) where
 
+import           Control.Lens
 import           Data.Scientific
 import           Data.Text                  (Text)
 import           Data.Void                  (Void)
 
 import           Parser.Generic
 import           Text.Megaparsec
+import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+
+data Message = Message
+  { _chartID  :: Text
+  , _msgPoint :: (Double, Double)
+  }
+
+makeLenses ''Message
 
 signed :: Parser Scientific
 signed = lexeme (L.signed sc L.scientific)
 
-pointP :: Parser (Double, Double)
-pointP = p <$> signed <*> signed
+point :: Parser (Double, Double)
+point = p <$> signed <*> signed
   where p a b = (toRealFloat a, toRealFloat b)
 
-point :: Text -> Either (ParseError (Token Text) Void) (Double, Double)
-point = parse pointP ""
+message :: Parser Message
+message = Message <$> stringLiteral
+                  <*  lexeme (char ':')
+                  <*> point
+
+parseMessage :: Text -> Either (ParseError (Token Text) Void) Message
+parseMessage = parse message ""

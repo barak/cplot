@@ -25,7 +25,8 @@ import           Chart                    (Chart)
 import qualified Chart
 import           Options
 import qualified Parser.Generic           as Parser
-import qualified Parser.Point             as Parser
+import           Parser.Point
+-- import qualified Parser.Point             as Parser
 import qualified Utils
 
 
@@ -128,22 +129,24 @@ instance Show AppException where
 
 instance Exception AppException
 
-parsePoint :: MonadThrow m => ConduitM Text (Double, Double) m ()
+parsePoint :: MonadThrow m => ConduitM Text Message m ()
 parsePoint = do
   mrawString <- await
   forM_ mrawString $ \rawString ->
-    case Parser.point rawString of
+    case parseMessage rawString of
       Left e  -> throw $ NoParse (Parser.parseErrorPretty e)
       Right p -> yield p >> parsePoint
 
 -- | for now, just add the point to all subcharts
 updateRefs :: (MonadIO m, MonadReader env m, HasAppState env)
-           => ConduitM (Double, Double) Void m ()
+           => ConduitM Message Void m ()
 updateRefs = do
-  mpoint <- await
+  mmsg <- await
   refs <- view chartRefs
-  forM_ mpoint $ \point -> do
-    liftIO $ forM_ refs $ \chartRef ->
-      IORef.modifyIORef chartRef
-        (Chart.subcharts . traverse . Chart.dataset %~ Chart.addPoint point)
+  forM_ mmsg $ \msg -> do
+    liftIO $ forM_ refs $ \chartRef -> do
+      chart <- IORef.readIORef chartRef
+      when (chart ^. Chart.title == msg ^. chartID) $
+        IORef.writeIORef chartRef $
+          chart & (Chart.subcharts . traverse . Chart.dataset %~ Chart.addPoint (msg ^. msgPoint))
     updateRefs

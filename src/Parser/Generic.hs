@@ -6,6 +6,7 @@ module Parser.Generic
   , parseErrorPretty
   ) where
 
+import Data.Char
 import           Control.Applicative        (empty)
 import           Data.Text                  (Text, pack)
 import           Data.Void                  (Void)
@@ -24,4 +25,5 @@ lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
 stringLiteral :: Parser Text
-stringLiteral = pack <$> manyTill L.charLiteral (char ' ')
+stringLiteral = lexeme $
+  pack <$> some (alphaNumChar <|> charCategory DashPunctuation)
