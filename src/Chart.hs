@@ -30,7 +30,6 @@ import qualified Data.DList                             as DList
 import           Data.Text                              (unpack)
 
 import qualified Graphics.Rendering.Chart               as Chart
-
 import qualified Graphics.Rendering.Cairo               as Cairo
 import           Graphics.Rendering.Chart.Backend.Cairo (defaultEnv, runBackend)
 
@@ -58,20 +57,20 @@ renderChart chart rect =
 
     plots = makePlottable <$> chart ^. subcharts
 
-    makePlottable :: Subchart -> Plottable Double Double
-    makePlottable subchart =
-      case view dataset subchart of
-        LineData d -> MkPlottable
-          $ Chart.plot_lines_title  .~ unpack (subchart ^. label)
-          $ Chart.plot_lines_values .~ [DList.toList d]
-          $ def
+makePlottable :: Subchart -> Plottable Double Double
+makePlottable subchart =
+  case view dataset subchart of
+    LineData d -> MkPlottable
+      $ Chart.plot_lines_title  .~ unpack (subchart ^. label)
+      $ Chart.plot_lines_values .~ [DList.toList d]
+      $ def
 
-        ScatterData d -> MkPlottable
-          $ Chart.plot_points_title  .~ unpack (subchart ^. label)
-          $ Chart.plot_points_values .~ DList.toList d
-          $ def
+    ScatterData d -> MkPlottable
+      $ Chart.plot_points_title  .~ unpack (subchart ^. label)
+      $ Chart.plot_points_values .~ DList.toList d
+      $ def
 
-        TimeSeriesData _ -> error "not yet implemented"
+    TimeSeriesData _ -> error "not yet implemented"
 
 addPoint :: (Double, Double) -> ChartData -> ChartData
 addPoint p@(_, y) = \case

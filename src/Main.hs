@@ -9,8 +9,7 @@ import           Control.Lens
 import           Control.Monad          (void)
 import           Control.Monad.Reader
 import           Data.Default           (def)
-import           Data.IORef             (IORef)
-import qualified Data.IORef             as IORef
+import           Data.IORef
 
 import           Graphics.UI.Gtk        (AttrOp ((:=)))
 import qualified Graphics.UI.Gtk        as Gtk
@@ -34,7 +33,7 @@ runGtkApp app env = Gtk.initGUI >> runApp app env >> Gtk.mainGUI
 
 createEnvironment :: AppOptions -> IO AppEnv
 createEnvironment opts = do
-  chartRefList <- mapM IORef.newIORef (opts ^. initialCharts)
+  chartRefList <- mapM newIORef (opts ^. initialCharts)
   return $ newAppEnv opts def (def & chartRefs .~ chartRefList)
 
 appGtk :: App ()
@@ -91,7 +90,7 @@ bindQuit window =
 
 updateCanvas :: MonadIO m => IORef Chart -> Gtk.DrawingArea -> m ()
 updateCanvas chartRef canvas = liftIO $ do
-  chart <- IORef.readIORef chartRef
+  chart <- readIORef chartRef
   Gtk.Requisition w h <- Gtk.widgetSizeRequest canvas
   let renderable = Chart.renderChart chart (fromIntegral w, fromIntegral h)
 
