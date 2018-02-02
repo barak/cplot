@@ -75,12 +75,12 @@ updateRefs = forever $ do
   msg  <- await
   refs <- view chartRefs
 
-  -- this hurts to look at
   liftIO $ forM_ refs $ \chartRef -> do
     chart <- readIORef chartRef
     when (chart ^. title == msg ^. chartID) $
       writeIORef chartRef $
-        chart & (subcharts . traverse . dataset %~ addPoint (msg ^. msgPoint))
+        chart & subcharts . traverse %~ (pushPoint (msg ^. msgPoint))
+                                     .  (numDataPoints +~ 1)
 
 inputStream :: App ()
 inputStream =

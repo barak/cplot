@@ -17,7 +17,6 @@ parseChartType :: Parser ChartType
 parseChartType = lexeme $
       (string "line"    >> return Line)
   <|> (string "scatter" >> return Scatter)
-  <|> (string "series"  >> return TimeSeries)
 
 parseSubchart :: Parser Subchart
 parseSubchart = do

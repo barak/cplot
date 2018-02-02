@@ -8,11 +8,9 @@ module Main where
 import qualified Control.Concurrent                as CC
 import           Control.Exception.Safe
 import           Control.Lens                      hiding (set)
-import           Control.Monad                     (void)
 import           Control.Monad.Reader
 import           Data.Default                      (def)
 import           Data.IORef
-import           Data.Maybe                        (fromJust)
 
 import qualified GI.Cairo                          as GI.Cairo
 import           GI.Gtk                            hiding (main, parseArgs)
@@ -62,9 +60,6 @@ renderWithContext ctx r =
 
 appGtk :: App ()
 appGtk = do
-  chartRefList <- view chartRefs
-  let testChartRef = head chartRefList
-
   mainWindow <- new Window
     [ #title         := "cplot"
     , #defaultWidth  := 800
@@ -74,23 +69,34 @@ appGtk = do
   -- bind quit to main window
   on mainWindow #destroy mainQuit
 
-  -- grid <- new Grid [ #orientation := OrientationHorizontal ]
+  grid <- new Grid [ #orientation := OrientationVertical ]
+  #setRowHomogeneous grid True
+  #setColumnHomogeneous grid True
+  #add mainWindow grid
 
-  chartCanvas <- new DrawingArea []
-  #setSizeRequest chartCanvas 400 300
-  #add mainWindow chartCanvas
-
-  on chartCanvas #draw $ \context -> do
-    w <- fromIntegral <$> #getAllocatedWidth chartCanvas
-    h <- fromIntegral <$> #getAllocatedHeight chartCanvas
-
-    testChart <- readIORef testChartRef
-
-    renderWithContext context (Chart.renderChart testChart (w, h))
-    return True
+  canvases <- generateChartCanvases
+  mapM_ (#add grid) canvases
 
   liftIO $ CC.forkIO $ forever $ do
-    #queueDraw chartCanvas
-    CC.threadDelay (1000000 `div` 30)
+    mapM_ #queueDraw canvases
+    CC.threadDelay (1000000 `div` 60)
 
   #showAll mainWindow
+
+-- | Creates the canvases and links the draw event to the chart renderer.
+generateChartCanvases :: (MonadIO m, MonadReader env m, HasAppState env) => m [DrawingArea]
+generateChartCanvases = do
+  refs <- view chartRefs
+  forM refs $ \ref -> do
+    canvas <- new DrawingArea []
+
+    on canvas #draw $ \ctx -> do
+      w <- fromIntegral <$> #getAllocatedWidth canvas
+      h <- fromIntegral <$> #getAllocatedHeight canvas
+
+      chart <- readIORef ref
+
+      renderWithContext ctx (Chart.renderChart chart (w, h))
+      return True
+
+    return canvas
