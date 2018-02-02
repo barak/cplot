@@ -26,7 +26,6 @@ module Chart
 import           Control.Lens
 import           Control.Monad                          (void)
 import           Data.Default                           (def)
-import qualified Data.DList                             as DList
 import           Data.Text                              (unpack)
 
 import qualified Graphics.Rendering.Chart               as Chart
@@ -53,6 +52,7 @@ renderChart chart rect =
     layout
       = Chart.layout_title .~ unpack (chart ^. title)
       $ Chart.layout_plots .~ map plottableToPlot plots
+      $ Chart.layout_x_axis . Chart.laxis_generate .~ Chart.autoScaledAxis def
       $ def
 
     plots = makePlottable <$> chart ^. subcharts
@@ -62,21 +62,21 @@ makePlottable subchart =
   case view dataset subchart of
     LineData d -> MkPlottable
       $ Chart.plot_lines_title  .~ unpack (subchart ^. label)
-      $ Chart.plot_lines_values .~ [DList.toList d]
+      $ Chart.plot_lines_values .~ [d]
       $ def
 
     ScatterData d -> MkPlottable
       $ Chart.plot_points_title  .~ unpack (subchart ^. label)
-      $ Chart.plot_points_values .~ DList.toList d
+      $ Chart.plot_points_values .~ d
       $ def
 
     TimeSeriesData _ -> error "not yet implemented"
 
 addPoint :: (Double, Double) -> ChartData -> ChartData
 addPoint p@(_, y) = \case
-  LineData       d -> LineData       $ DList.snoc d p
-  ScatterData    d -> ScatterData    $ DList.snoc d p
-  TimeSeriesData d -> TimeSeriesData $ DList.snoc d y
+  LineData       d -> LineData       (p : d)
+  ScatterData    d -> ScatterData    (p : d)
+  TimeSeriesData d -> TimeSeriesData (y : d)
 
 newDataset :: ChartType -> ChartData
 newDataset = \case

@@ -5,8 +5,6 @@ module Chart.Types where
 
 import           Control.Lens
 import           Data.Default
-import           Data.DList               (DList)
-import qualified Data.DList               as DList
 import           Data.Text                (Text)
 import qualified Graphics.Rendering.Chart as Chart
 
@@ -29,9 +27,9 @@ data ChartType
   | TimeSeries
 
 data ChartData
-  = LineData       (DList (Double, Double))
-  | ScatterData    (DList (Double, Double))
-  | TimeSeriesData (DList Double)
+  = LineData       [(Double, Double)]
+  | ScatterData    [(Double, Double)]
+  | TimeSeriesData [Double]
 
 makeLenses ''Chart
 makeLenses ''Subchart
@@ -53,4 +51,4 @@ instance Default Subchart where
     }
 
 instance Default ChartData where
-  def = LineData DList.empty
+  def = LineData []
