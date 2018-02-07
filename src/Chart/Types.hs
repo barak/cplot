@@ -5,15 +5,13 @@ module Chart.Types where
 
 import           Control.Lens
 import           Data.Default
-import           Data.Sequence            (Seq, empty)
 import           Data.Text                (Text)
-import qualified Graphics.Rendering.Chart as Chart
-
+import           MinMaxQueue              (MinMaxQueue)
+import qualified MinMaxQueue              as MMQ
 
 data Chart = Chart
   { _title     :: Text
   , _subcharts :: [Subchart]
-  , _rectSize  :: Chart.RectSize
   }
 
 -- | Represents a single data/style group inside a chart
@@ -30,8 +28,8 @@ data ChartType
   | Scatter
 
 data ChartData
-  = LineData       (Seq (Double, Double))
-  | ScatterData    (Seq (Double, Double))
+  = LineData    (MinMaxQueue (Double, Double))
+  | ScatterData (MinMaxQueue (Double, Double))
 
 makeLenses ''Chart
 makeLenses ''Subchart
@@ -43,7 +41,6 @@ instance Default Chart where
   def = Chart
     { _title     = "chart"
     , _subcharts = []
-    , _rectSize  = (0, 0)
     }
 
 instance Default Subchart where
@@ -52,8 +49,8 @@ instance Default Subchart where
     , _dataset       = def
     , _xAxisBounds   = (0, 1)
     , _numDataPoints = 0
-    , _maxDataPoints = 1000
+    , _maxDataPoints = 10000
     }
 
 instance Default ChartData where
-  def = LineData empty
+  def = LineData MMQ.empty

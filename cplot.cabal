@@ -23,6 +23,7 @@ executable cplot
                      , Parser.Point
                      , Parser.Options
                      , Options
+                     , MinMaxQueue
                      , Utils
   main-is:             Main.hs
   ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N

@@ -77,10 +77,23 @@ updateRefs = forever $ do
 
   liftIO $ forM_ refs $ \chartRef -> do
     chart <- readIORef chartRef
+    let newPoint = msg ^. msgPoint
+
     when (chart ^. title == msg ^. chartID) $
       writeIORef chartRef $
-        chart & subcharts . traverse %~ (pushPoint (msg ^. msgPoint))
-                                     .  (numDataPoints +~ 1)
+        chart & subcharts . traverse %~ updateSubchart newPoint
+
+updateSubchart :: (Double, Double) -> Subchart -> Subchart
+updateSubchart newPoint subchart =
+  subchart & numDataPoints +~ 1
+           & dataset       %~ newData
+  where
+    nPoints   = subchart ^. numDataPoints
+    maxPoints = subchart ^. maxDataPoints
+    newData d =
+      if nPoints >= maxPoints
+        then snd (pushPopPoint newPoint d)
+        else pushPoint newPoint d
 
 inputStream :: App ()
 inputStream =
