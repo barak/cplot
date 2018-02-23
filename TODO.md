@@ -1,7 +1,4 @@
 # TODO
 
-## Immediate
+- [ ] Approximate streaming statistics (no idea which would be useful to show)
 
-- Configure options to include more/better error info and metadata
-- Graphics.Rendering.Chart.Easy automatically switches colours and styles, may
-  be worth switching to.

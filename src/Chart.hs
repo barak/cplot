@@ -1,11 +1,8 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE LambdaCase                #-}
 
 module Chart
   ( Chart
-  , ChartType
-  , ChartData
   , Subchart
 
   -- Chart lenses
@@ -15,6 +12,7 @@ module Chart
   -- Subchart lenses
   , label
   , dataset
+  , style
   , xAxisBounds
   , numDataPoints
   , maxDataPoints
@@ -23,7 +21,6 @@ module Chart
   , renderChart
   , pushPoint
   , pushPopPoint
-  , newDataset
   ) where
 
 import           Control.Lens                           hiding ((:<), (<|),
@@ -33,11 +30,6 @@ import           Data.Default                           (def)
 import           Data.Maybe                             (fromJust)
 import           Data.Text                              (unpack)
 
--- import           Data.Sequence                          (ViewL (..), viewl,
---                                                          (|>))
--- import qualified Data.Sequence                          as Seq
-
-import           MinMaxQueue                            (MinMaxQueue)
 import qualified MinMaxQueue                            as MMQ
 
 import qualified Graphics.Rendering.Cairo               as Cairo
@@ -77,50 +69,37 @@ renderChart chart rect =
 
     plots = makePlottable <$> chart ^. subcharts
 
+    -- these are necessary if you wish to have multiple plots on the same chart.
     minXChart = minimum [ minXVal (subchart ^. dataset) | subchart <- chart ^. subcharts ]
     maxXChart = maximum [ maxXVal (subchart ^. dataset) | subchart <- chart ^. subcharts ]
 
-    minXVal = \case
-      LineData d    -> fst $ fromJust (MMQ.minimum d)
-      ScatterData d -> fst $ fromJust (MMQ.minimum d)
-
-    maxXVal = \case
-      LineData d    -> fst $ fromJust (MMQ.maximum d)
-      ScatterData d -> fst $ fromJust (MMQ.maximum d)
+    minXVal d = fst $ fromJust (MMQ.minimum d)
+    maxXVal d = fst $ fromJust (MMQ.maximum d)
 
 makePlottable :: Subchart -> Plottable Double Double
 makePlottable subchart =
-  case view dataset subchart of
-    LineData d -> MkPlottable
-      $ Chart.plot_lines_title  .~ unpack (subchart ^. label)
+  case view style subchart of
+    LinePlot -> MkPlottable
+      $ Chart.plot_lines_title  .~ l
       $ Chart.plot_lines_values .~ [MMQ.toList d]
       $ def
 
-    ScatterData d -> MkPlottable
-      $ Chart.plot_points_title  .~ unpack (subchart ^. label)
+    ScatterPlot -> MkPlottable
+      $ Chart.plot_points_title  .~ l
       $ Chart.plot_points_values .~ MMQ.toList d
       $ def
+  where
+    d = subchart ^. dataset
+    l = unpack (subchart ^. label)
 
-popPoint :: ChartData -> ((Double, Double), ChartData)
-popPoint = \case
-  LineData d -> case MMQ.pop d of
-    Just (p, d') -> (p, LineData d')
-    Nothing      -> ((0, 0), LineData d)
+popPoint :: Dataset -> ((Double, Double), Dataset)
+popPoint d = case MMQ.pop d of
+  Just (p, d') -> (p, d')
+  Nothing      -> ((0, 0), d)
 
-  ScatterData d -> case MMQ.pop d of
-    Just (p, d') -> (p, ScatterData d')
-    Nothing      -> ((0, 0), ScatterData d)
+pushPoint :: (Double, Double) -> Dataset -> Dataset
+pushPoint = MMQ.push
 
-pushPoint :: (Double, Double) -> ChartData -> ChartData
-pushPoint p = \case
-  LineData    d -> LineData    (MMQ.push p d)
-  ScatterData d -> ScatterData (MMQ.push p d)
-
-pushPopPoint :: (Double, Double) -> ChartData -> ((Double, Double), ChartData)
+pushPopPoint :: (Double, Double) -> Dataset -> ((Double, Double), Dataset)
 pushPopPoint p d = (p', pushPoint p d')
   where (p', d') = popPoint d
-
-newDataset :: ChartType -> ChartData
-newDataset = \case
-  Line    -> LineData MMQ.empty
-  Scatter -> ScatterData MMQ.empty

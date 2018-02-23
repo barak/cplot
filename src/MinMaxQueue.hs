@@ -11,8 +11,9 @@ module MinMaxQueue
   , minimum
   ) where
 
-import           Data.List hiding (maximum, minimum)
-import           Prelude   hiding (maximum, minimum)
+import           Data.Default
+import           Data.List    hiding (maximum, minimum)
+import           Prelude      hiding (maximum, minimum)
 
 -- MinMaxQueue description:
 -- Implement using two 'stacks' (lists)
@@ -97,3 +98,5 @@ minimum = \case
   MMQ           [] ((_,_,mn'):_) -> Just mn'
   MMQ ((_,_,mn):_) ((_,_,mn'):_) -> Just (min mn mn')
 
+instance Default (MinMaxQueue a) where
+  def = MMQ [] []

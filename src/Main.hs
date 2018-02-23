@@ -12,7 +12,7 @@ import           Control.Monad.Reader
 import           Data.Default                      (def)
 import           Data.IORef
 
-import qualified GI.Cairo                          as GI.Cairo
+import qualified GI.Cairo
 import           GI.Gtk                            hiding (main, parseArgs)
 import qualified GI.Gtk                            as Gtk (init, main)
 import qualified GI.Gdk                            as Gdk
@@ -23,10 +23,8 @@ import           Graphics.Rendering.Cairo.Internal (Render (runRender))
 import           Graphics.Rendering.Cairo.Types    (Cairo (Cairo))
 
 import           App
-import           Chart                             (Chart)
 import qualified Chart
 import           Options
-import qualified Utils
 
 
 main :: IO ()
@@ -79,7 +77,7 @@ appGtk = do
 
   liftIO $ CC.forkIO $ forever $ do
     mapM_ #queueDraw canvases
-    CC.threadDelay (1000000 `div` 60)
+    CC.threadDelay (1000000 `div` 30)
 
   #showAll mainWindow
 

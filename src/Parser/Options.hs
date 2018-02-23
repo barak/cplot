@@ -5,7 +5,7 @@ module Parser.Options
   ) where
 
 import qualified Chart
-import           Chart.Types          (Chart, ChartType (..), Subchart)
+import           Chart.Types          (Chart, PlotStyle (..), Subchart)
 import           Control.Lens
 import           Data.Default         (def)
 import           Parser.Generic
@@ -13,17 +13,17 @@ import           Parser.Generic
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 
-parseChartType :: Parser ChartType
-parseChartType = lexeme $
-      (string "line"    >> return Line)
-  <|> (string "scatter" >> return Scatter)
+parseChartStyle :: Parser PlotStyle
+parseChartStyle = lexeme $
+      (string "line"    >> return LinePlot)
+  <|> (string "scatter" >> return ScatterPlot)
 
 parseSubchart :: Parser Subchart
 parseSubchart = do
   subchartLabel <- stringLiteral
-  subchartType <- parseChartType
-  return $ Chart.label   .~ subchartLabel
-         $ Chart.dataset .~ Chart.newDataset subchartType
+  subchartStyle <- parseChartStyle
+  return $ Chart.label .~ subchartLabel
+         $ Chart.style .~ subchartStyle
          $ def
 
 parseChart :: Parser Chart
