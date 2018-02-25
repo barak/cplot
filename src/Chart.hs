@@ -47,7 +47,7 @@ plottableToPlot (MkPlottable p) = Chart.toPlot p
 
 renderChart :: Chart -> Chart.RectSize -> Cairo.Render ()
 renderChart chart rect =
-  void $ runBackend (defaultEnv Chart.bitmapAlignmentFns)
+  void $ runBackend (defaultEnv Chart.vectorAlignmentFns)
                     (Chart.render renderable rect)
   where
     renderable :: Chart.Renderable ()
