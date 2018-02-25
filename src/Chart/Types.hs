@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE Rank2Types #-}
 
 module Chart.Types where
 
 import           Control.Lens
 import           Data.Default
-import           Data.Text                (Text)
-import           MinMaxQueue              (MinMaxQueue)
+import           Data.Text    (Text)
+import           MinMaxQueue  (MinMaxQueue)
 
 type Point   = (Double, Double)
 type Dataset = MinMaxQueue Point
@@ -24,12 +23,14 @@ data Subchart = Subchart
   , _style         :: PlotStyle
   , _xAxisBounds   :: (Double, Double)
   , _numDataPoints :: Int
+  -- consider making this 'Maybe Int', in case we want an unbounded dataset
   , _maxDataPoints :: Int
   }
 
 data PlotStyle
   = LinePlot
   | ScatterPlot
+  | Histogram   -- the plot thickens haHAA
 
 makeLenses ''Chart
 makeLenses ''Subchart

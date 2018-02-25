@@ -64,7 +64,6 @@ appGtk = do
     , #defaultHeight := 600
     ]
 
-  -- bind quit to main window
   on mainWindow #destroy mainQuit
 
   grid <- new Grid [ #orientation := OrientationVertical ]
