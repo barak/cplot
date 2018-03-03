@@ -6,7 +6,11 @@ module Chart.Types where
 import           Control.Lens
 import           Data.Default
 import           Data.Text    (Text)
+import           MinMaxBuffer (MinMaxBuffer)
+import qualified MinMaxBuffer as MMB
 import           MinMaxQueue  (MinMaxQueue)
+import qualified MinMaxQueue  as MMQ
+
 
 type Point   = (Double, Double)
 type Dataset = MinMaxQueue Point
@@ -19,6 +23,7 @@ data Chart = Chart
 -- | Represents a single data/style group inside a chart
 data Subchart = Subchart
   { _label         :: Text
+  , _buffer        :: MinMaxBuffer Point
   , _dataset       :: Dataset
   , _style         :: PlotStyle
   , _xAxisBounds   :: (Double, Double)
@@ -30,7 +35,6 @@ data Subchart = Subchart
 data PlotStyle
   = LinePlot
   | ScatterPlot
-  | Histogram   -- the plot thickens haHAA
 
 makeLenses ''Chart
 makeLenses ''Subchart
@@ -47,9 +51,10 @@ instance Default Chart where
 instance Default Subchart where
   def = Subchart
     { _label         = "label"
-    , _dataset       = def
+    , _buffer        = MMB.empty
+    , _dataset       = MMQ.empty
     , _style         = LinePlot
     , _xAxisBounds   = (0, 1)
     , _numDataPoints = 0
-    , _maxDataPoints = 10000
+    , _maxDataPoints = 5000
     }

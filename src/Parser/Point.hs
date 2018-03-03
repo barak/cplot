@@ -6,7 +6,7 @@ module Parser.Point
 
   -- Message lenses
   , chartID
-  , msgPoint
+  , point
   ) where
 
 import           Control.Lens
@@ -19,9 +19,11 @@ import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
+import           Chart
+
 data Message = Message
   { _chartID  :: Text
-  , _msgPoint :: (Double, Double)
+  , _point :: Point
   }
 
 makeLenses ''Message
@@ -29,14 +31,14 @@ makeLenses ''Message
 signed :: Parser Scientific
 signed = lexeme (L.signed sc L.scientific)
 
-point :: Parser (Double, Double)
-point = p <$> signed <*> signed
+pointP :: Parser Point
+pointP = p <$> signed <*> signed
   where p a b = (toRealFloat a, toRealFloat b)
 
 message :: Parser Message
 message = Message <$> stringLiteral
                   <*  lexeme (char ':')
-                  <*> point
+                  <*> pointP
 
 parseMessage :: Text -> Either (ParseError (Token Text) Void) Message
 parseMessage = parse message ""

@@ -10,6 +10,7 @@ module App
   , runApp
   , newAppEnv
   , inputStream
+  , drainBuffersEvery
 
   -- AppEnv lenses
   , options
@@ -21,10 +22,12 @@ module App
   ) where
 
 import           Control.Lens
+import qualified Data.HashMap.Lazy      as Map
 import           Data.IORef
 import           Data.Monoid            ((<>))
 import           Data.Text              (Text, pack, unpack)
 
+import qualified Control.Concurrent     as CC
 import           Control.Exception.Safe
 import           Control.Monad          (forever, void)
 import           Control.Monad.Reader
@@ -69,37 +72,41 @@ parsePoint = forever $ do
     Left e  -> throw $ NoParse (pack (Parser.parseErrorPretty e))
     Right p -> yield p
 
-updateRefs :: (MonadIO m, MonadReader env m, HasAppState env)
-           => Consumer Message m ()
-updateRefs = forever $ do
-  msg  <- await
-  refs <- view chartRefs
 
-  liftIO $ forM_ refs $ \chartRef -> do
-    chart <- readIORef chartRef
-    let newPoint = msg ^. msgPoint
-
-    when (chart ^. title == msg ^. chartID) $
-      writeIORef chartRef $
-        chart & subcharts . traverse %~ updateSubchart newPoint
-
-updateSubchart :: (Double, Double) -> Subchart -> Subchart
-updateSubchart newPoint subchart =
-  subchart & numDataPoints +~ 1
-           & dataset       %~ newData
+fillBuffers :: (MonadIO m, MonadReader env m, HasAppState env)
+            => Consumer Message m ()
+fillBuffers = loop
   where
-    nPoints   = subchart ^. numDataPoints
-    maxPoints = subchart ^. maxDataPoints
-    newData d =
-      if nPoints >= maxPoints
-        then snd (pushPopPoint newPoint d)
-        else pushPoint newPoint d
+    loop = do
+      msg    <- await
+      refMap <- view chartRefs
 
+      case Map.lookup (msg^.chartID) refMap of
+        Nothing  -> loop
+        Just ref -> do
+          chart <- liftIO $ readIORef ref
+          liftIO $ writeIORef ref
+                 $ chart & subcharts . traverse %~ pushToBuffer (msg^.point)
+          loop
+
+drainBuffersEvery :: (MonadIO m, MonadReader env m, HasAppState env)
+                  => Int -> m ()
+drainBuffersEvery μs = loop
+  where
+    loop = do
+      liftIO (CC.threadDelay μs)
+      refMap <- view chartRefs
+      forM_ (Map.elems refMap) $ \ref -> liftIO $ do
+        chart <- readIORef ref
+        writeIORef ref $ chart & subcharts . traverse %~ drainBufferToDataset
+      loop
+
+-- | Receives points and places them in their respective buffers.
 inputStream :: App ()
 inputStream =
   runEffect $ accumLines PT.stdin
           >-> parsePoint
-          >-> updateRefs
+          >-> fillBuffers
 
 accumLines :: Monad m => Producer Text m r -> Producer Text m r
 accumLines = mconcats . view PT.lines

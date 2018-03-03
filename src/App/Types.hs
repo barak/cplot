@@ -12,7 +12,10 @@ import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Monad.Reader
 import           Data.Default
+import           Data.HashMap.Lazy      (HashMap)
+import qualified Data.HashMap.Lazy      as Map
 import           Data.IORef             (IORef)
+import           Data.Text              (Text)
 import           Options
 
 
@@ -31,7 +34,7 @@ data AppConfig = AppConfig
 
 -- | 'Global' application state with components you can change (safely)
 data AppState = AppState
-  { _chartRefs :: [IORef Chart] }
+  { _chartRefs :: HashMap Text (IORef Chart) }
 
 makeClassy ''AppEnv
 makeClassy ''AppConfig
@@ -48,4 +51,4 @@ instance Default AppConfig where
   def = AppConfig
 
 instance Default AppState where
-  def = AppState { _chartRefs = [] }
+  def = AppState { _chartRefs = Map.empty }

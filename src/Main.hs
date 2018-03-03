@@ -10,6 +10,7 @@ import           Control.Exception.Safe
 import           Control.Lens                      hiding (set)
 import           Control.Monad.Reader
 import           Data.Default                      (def)
+import qualified Data.HashMap.Lazy                 as Map
 import           Data.IORef
 
 import qualified GI.Cairo
@@ -32,6 +33,7 @@ main = do
   opts <- liftIO parseArgs
   env <- createEnvironment opts
   CC.forkIO $ runApp inputStream env `onException` killGUI
+  CC.forkIO $ runApp (drainBuffersEvery 1000) env
   runGtkApp appGtk env
 
   where
@@ -84,7 +86,7 @@ appGtk = do
 generateChartCanvases :: (MonadIO m, MonadReader env m, HasAppState env) => m [DrawingArea]
 generateChartCanvases = do
   refs <- view chartRefs
-  forM refs $ \ref -> do
+  forM (Map.elems refs) $ \ref -> do
     canvas <- new DrawingArea []
 
     on canvas #draw $ \ctx -> do

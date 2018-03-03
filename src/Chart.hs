@@ -4,6 +4,7 @@
 module Chart
   ( Chart
   , Subchart
+  , Point
 
   -- Chart lenses
   , title
@@ -19,6 +20,8 @@ module Chart
 
   -- stuff from this module
   , renderChart
+  , pushToBuffer
+  , drainBufferToDataset
   , pushPoint
   , pushPopPoint
   ) where
@@ -28,8 +31,10 @@ import           Control.Lens                           hiding ((:<), (<|),
 import           Control.Monad                          (void)
 import           Data.Default                           (def)
 import           Data.Maybe                             (fromJust)
+import           Data.Ord                               (comparing)
 import           Data.Text                              (unpack)
 
+import qualified MinMaxBuffer                           as MMB
 import qualified MinMaxQueue                            as MMQ
 
 import qualified Graphics.Rendering.Cairo               as Cairo
@@ -92,14 +97,35 @@ makePlottable subchart =
     d = subchart ^. dataset
     l = unpack (subchart ^. label)
 
-popPoint :: Dataset -> ((Double, Double), Dataset)
+pushToBuffer :: Point -> Subchart -> Subchart
+pushToBuffer p chart = chart & buffer %~ MMB.putBy (comparing snd) p
+
+drainBufferToDataset :: Subchart -> Subchart
+drainBufferToDataset subchart = foldr pushToDataset subchart' elems
+  where
+    elems     = MMB.drain (subchart^.buffer)
+    subchart' = subchart & buffer .~ MMB.empty
+
+pushToDataset :: Point -> Subchart -> Subchart
+pushToDataset p subchart =
+  subchart & numDataPoints +~ 1
+           & dataset       %~ dataset'
+  where
+    nPoints    = subchart ^. numDataPoints
+    maxPoints  = subchart ^. maxDataPoints
+    dataset' d =
+      if nPoints >= maxPoints
+        then snd (pushPopPoint p d)
+        else pushPoint p d
+
+popPoint :: Dataset -> (Point, Dataset)
 popPoint d = case MMQ.pop d of
   Just (p, d') -> (p, d')
   Nothing      -> ((0, 0), d)
 
-pushPoint :: (Double, Double) -> Dataset -> Dataset
+pushPoint :: Point -> Dataset -> Dataset
 pushPoint = MMQ.push
 
-pushPopPoint :: (Double, Double) -> Dataset -> ((Double, Double), Dataset)
+pushPopPoint :: Point -> Dataset -> (Point, Dataset)
 pushPopPoint p d = (p', pushPoint p d')
   where (p', d') = popPoint d
