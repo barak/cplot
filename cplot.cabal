@@ -19,7 +19,6 @@ executable cplot
                      , App.Types
                      , Chart
                      , Chart.Types
-                     , Parser.Generic
                      , Parser.Point
                      , Parser.Options
                      , Options
@@ -32,6 +31,7 @@ executable cplot
   build-depends:       base >= 4.7 && < 5
                      , unordered-containers
                      , containers >= 0.5
+                     , stm
                      , Chart >= 1.8
                      , Chart-cairo >= 1.8
                      , haskell-gi >= 0.20
@@ -48,9 +48,10 @@ executable cplot
                      , scientific >= 0.3
                      , cairo >= 0.13
                      , pipes >= 4.3
-                     , pipes-text >= 0.0
+                     , pipes-bytestring
                      , pipes-group >= 1.0
                      , safe-exceptions >= 0.1
                      , megaparsec >= 6.2
+                     , attoparsec
                      , optparse-applicative >= 0.13
                      , data-default >= 0.7

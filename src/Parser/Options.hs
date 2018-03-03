@@ -1,17 +1,37 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Parser.Options
-  ( parseChart
+  ( Parser
+  , parseChart
   ) where
 
-import qualified Chart
-import           Chart.Types          (Chart, PlotStyle (..), Subchart)
+import           Control.Applicative        (empty)
 import           Control.Lens
-import           Data.Default         (def)
-import           Parser.Generic
+import           Data.Char                  (GeneralCategory (..))
+import           Data.Default               (def)
+import           Data.Void                  (Void)
 
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char.Lexer as L
+
+import qualified Chart
+import           Chart.Types                (Chart, PlotStyle (..), Subchart)
+
+
+type Parser = Parsec Void Text
+
+sc :: Parser ()
+sc = L.space space1 empty empty
+
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme sc
+
+stringLiteral :: Parser Text
+stringLiteral = lexeme $
+  T.pack <$> some (alphaNumChar <|> charCategory DashPunctuation)
 
 parseChartStyle :: Parser PlotStyle
 parseChartStyle = lexeme $

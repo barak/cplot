@@ -11,7 +11,6 @@ module Options
   , initialCharts
   ) where
 
-import           Chart               (Chart)
 import           Control.Arrow       (left)
 import           Control.Lens
 import           Data.HashMap.Lazy   (HashMap)
@@ -21,11 +20,10 @@ import           Data.Text           (Text)
 import qualified Data.Text           as T
 import           Options.Applicative
 
-import qualified Parser.Generic      as MP
 import qualified Parser.Options      as MP
 import qualified Text.Megaparsec     as MP
 
-import Chart
+import           Chart
 
 data AppOptions = AppOptions
   { _initialCharts :: HashMap Text Chart }
