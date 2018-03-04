@@ -55,3 +55,9 @@ executable cplot
                      , attoparsec
                      , optparse-applicative >= 0.13
                      , data-default >= 0.7
+                     , yaml
+                     , aeson
+                     , raw-strings-qq
+                     , directory
+                     , monad-control
+                     , transformers-base

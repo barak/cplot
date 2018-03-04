@@ -16,3 +16,4 @@ _minted-*
 *.prof
 *.hp
 *.ps
+cplot.yaml

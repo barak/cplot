@@ -10,12 +10,20 @@ module App
   , runApp
   , newAppEnv
   , inputStream
-  , drainBuffersEvery
+  , drainBuffers
+
+  , defaultAppConfig
 
   -- AppEnv lenses
   , options
   , config
   , state
+
+  -- AppConfig lenses
+  , fps
+  , drainRate
+  , windowWidth
+  , windowHeight
 
   -- AppState lenses
   , chartRefs
@@ -87,12 +95,14 @@ fillBuffers = loop
                  $ chart & subcharts . traverse %~ pushToBuffer (msg^.point)
           loop
 
-drainBuffersEvery :: (MonadIO m, MonadReader env m, HasAppState env)
-                  => Int -> m ()
-drainBuffersEvery μs = loop
+drainBuffers :: (MonadIO m, MonadReader env m, HasAppState env, HasAppConfig env)
+             => m ()
+drainBuffers = loop
   where
     loop = do
+      μs <- view drainRate
       liftIO (CC.threadDelay μs)
+
       refMap <- view chartRefs
       forM_ (Map.elems refMap) $ \ref -> liftIO $ do
         chart <- readIORef ref

@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedLabels  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -13,6 +14,9 @@ import           Data.Default                      (def)
 import qualified Data.HashMap.Lazy                 as Map
 import           Data.IORef
 
+import qualified Data.ByteString                   as B
+import qualified Data.Yaml                         as Y
+
 import qualified GI.Cairo
 import           GI.Gtk                            hiding (main, parseArgs)
 import qualified GI.Gtk                            as Gtk (init, main)
@@ -23,17 +27,38 @@ import           Foreign.Ptr                       (castPtr)
 import           Graphics.Rendering.Cairo.Internal (Render (runRender))
 import           Graphics.Rendering.Cairo.Types    (Cairo (Cairo))
 
+import           System.Directory                  (doesFileExist)
+
 import           App
 import qualified Chart
 import           Options
 
 
+throwEither :: (MonadThrow m, Exception e) => Either e a -> m a
+throwEither = \case
+  Left e  -> throw e
+  Right a -> return a
+
 main :: IO ()
 main = do
+  let confPath = "cplot.yaml"
   opts <- liftIO parseArgs
-  env <- createEnvironment opts
+  conf <- (throwEither =<<) $ do
+    confPresent <- doesFileExist confPath
+    if confPresent
+      then Y.decodeFileEither confPath
+      else do
+        putStrLn $ "No cplot.yaml detected, creating default config.\n\n"
+                ++ "It is highly recommended that you customise this file as "
+                ++ "per your requirements."
+        B.writeFile confPath defaultAppConfig
+        Y.decodeFileEither confPath
+
+  env <- createEnvironment opts conf
+
   CC.forkIO $ runApp inputStream env `onException` killGUI
-  CC.forkIO $ runApp (drainBuffersEvery 1000) env
+  CC.forkIO $ runApp drainBuffers env `onException` killGUI
+
   runGtkApp appGtk env
 
   where
@@ -48,10 +73,10 @@ runGtkApp app env = do
   runApp app env
   Gtk.main
 
-createEnvironment :: AppOptions -> IO AppEnv
-createEnvironment opts = do
+createEnvironment :: AppOptions -> AppConfig -> IO AppEnv
+createEnvironment opts conf = do
   chartRefList <- mapM newIORef (opts ^. initialCharts)
-  return $ newAppEnv opts def (def & chartRefs .~ chartRefList)
+  return $ newAppEnv opts conf (def & chartRefs .~ chartRefList)
 
 renderWithContext :: GI.Cairo.Context -> Render () -> IO ()
 renderWithContext ctx r =
@@ -60,10 +85,12 @@ renderWithContext ctx r =
 
 appGtk :: App ()
 appGtk = do
+  w <- view windowWidth
+  h <- view windowHeight
   mainWindow <- new Window
     [ #title         := "cplot"
-    , #defaultWidth  := 800
-    , #defaultHeight := 600
+    , #defaultWidth  := w
+    , #defaultHeight := h
     ]
 
   on mainWindow #destroy mainQuit
@@ -76,9 +103,10 @@ appGtk = do
   canvases <- generateChartCanvases
   mapM_ (#add grid) canvases
 
+  framerate <- view fps
   liftIO $ CC.forkIO $ forever $ do
     mapM_ #queueDraw canvases
-    CC.threadDelay (1000000 `div` 30)
+    CC.threadDelay (1000000 `div` framerate)
 
   #showAll mainWindow
 
