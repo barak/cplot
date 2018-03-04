@@ -18,21 +18,21 @@ put :: Ord a => a -> MinMaxBuffer a -> MinMaxBuffer a
 put = putBy compare
 
 putBy :: (a -> a -> Ordering) -> a -> MinMaxBuffer a -> MinMaxBuffer a
-putBy cmp a = \case
-  Nil      -> Single a
-  Single b -> Pair b a
-  Pair b c -> case (cmp a b == LT, cmp a c == LT, cmp b c == LT) of
-    (False, False, False) -> Pair c a
-    (False, False, True)  -> Pair b a
-    (True,  True,  False) -> Pair b a
-    (True,  True,  True)  -> Pair c a
-    _                     -> Pair b c
+putBy cmp x = \case
+  Nil      -> Single x
+  Single a -> Pair a x
+  Pair a b -> case (cmp x a == LT, cmp x b == LT, cmp a b == LT) of
+    (False, False, False) -> Pair b x
+    (False, False, True)  -> Pair a x
+    (True,  True,  False) -> Pair a x
+    (True,  True,  True)  -> Pair b x
+    _                     -> Pair a b
 
 drain :: MinMaxBuffer a -> [a]
 drain = \case
   Nil      -> []
   Single a -> [a]
-  Pair a b -> [a, b]
+  Pair a b -> [b, a]
 
 empty :: MinMaxBuffer a
 empty = Nil
