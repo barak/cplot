@@ -104,9 +104,9 @@ appGtk = do
   mapM_ (#add grid) canvases
 
   framerate <- view fps
-  liftIO $ CC.forkIO $ forever $ do
+  void $ GLib.timeoutAdd GLib.PRIORITY_HIGH (1000 `div` framerate) $ do
     mapM_ #queueDraw canvases
-    CC.threadDelay (1000000 `div` framerate)
+    return True
 
   #showAll mainWindow
 
