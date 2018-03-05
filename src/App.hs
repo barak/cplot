@@ -29,9 +29,9 @@ module App
   , chartRefs
   ) where
 
+import           Control.Concurrent.MVar
 import           Control.Lens
-import qualified Data.HashMap.Lazy      as Map
-import           Data.IORef
+import qualified Data.HashMap.Strict    as Map
 import           Data.Monoid            ((<>))
 import           Data.Text.Encoding     (decodeUtf8)
 
@@ -90,8 +90,8 @@ fillBuffers = loop
       case Map.lookup (decodeUtf8 $ msg^.chartID) refMap of
         Nothing  -> loop
         Just ref -> do
-          chart <- liftIO $ readIORef ref
-          liftIO $ writeIORef ref
+          chart <- liftIO $ takeMVar ref
+          liftIO $ putMVar ref
                  $ chart & subcharts . traverse %~ pushToBuffer (msg^.point)
           loop
 
@@ -105,8 +105,8 @@ drainBuffers = loop
 
       refMap <- view chartRefs
       forM_ (Map.elems refMap) $ \ref -> liftIO $ do
-        chart <- readIORef ref
-        writeIORef ref $ chart & subcharts . traverse %~ drainBufferToDataset
+        chart <- takeMVar ref
+        putMVar ref $ chart & subcharts . traverse %~ drainBufferToDataset
       loop
 
 -- | Receives points and places them in their respective buffers.

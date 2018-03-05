@@ -11,8 +11,7 @@ import           Control.Exception.Safe
 import           Control.Lens                      hiding (set)
 import           Control.Monad.Reader
 import           Data.Default                      (def)
-import qualified Data.HashMap.Lazy                 as Map
-import           Data.IORef
+import qualified Data.HashMap.Strict               as Map
 
 import qualified Data.ByteString                   as B
 import qualified Data.Yaml                         as Y
@@ -75,7 +74,7 @@ runGtkApp app env = do
 
 createEnvironment :: AppOptions -> AppConfig -> IO AppEnv
 createEnvironment opts conf = do
-  chartRefList <- mapM newIORef (opts ^. initialCharts)
+  chartRefList <- mapM CC.newMVar (opts^.initialCharts)
   return $ newAppEnv opts conf (def & chartRefs .~ chartRefList)
 
 renderWithContext :: GI.Cairo.Context -> Render () -> IO ()
@@ -121,7 +120,7 @@ generateChartCanvases = do
       w <- fromIntegral <$> #getAllocatedWidth canvas
       h <- fromIntegral <$> #getAllocatedHeight canvas
 
-      chart <- readIORef ref
+      chart <- CC.readMVar ref
 
       renderWithContext ctx (Chart.renderChart chart (w, h))
       return True

@@ -61,3 +61,4 @@ executable cplot
                      , directory
                      , monad-control
                      , transformers-base
+                     , lifted-base

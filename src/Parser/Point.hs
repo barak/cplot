@@ -24,7 +24,7 @@ data Message = Message
 makeLenses ''Message
 
 stringLiteral :: Parser ByteString
-stringLiteral = takeWhile1 isAlpha_ascii
+stringLiteral = takeWhile1 (\c -> isAlpha_ascii c || isDigit c)
 
 pointP :: Parser Point
 pointP = (,) <$> double

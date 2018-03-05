@@ -30,7 +30,6 @@ import           Control.Lens                           hiding ((:<), (<|),
                                                          (|>))
 import           Control.Monad                          (void)
 import           Data.Default                           (def)
-import           Data.Maybe                             (fromJust)
 import           Data.Ord                               (comparing)
 import           Data.Text                              (unpack)
 
@@ -59,7 +58,7 @@ renderChart chart rect =
     renderable = Chart.toRenderable layout
 
     layout
-      = Chart.layout_title .~ unpack (chart ^. title)
+      = Chart.layout_title .~ unpack (chart^.title)
       $ Chart.layout_plots .~ map plottableToPlot plots
       $ Chart.layout_x_axis . Chart.laxis_generate .~ const Chart.AxisData
         { Chart._axis_visibility = def
@@ -72,14 +71,14 @@ renderChart chart rect =
         }
       $ def
 
-    plots = makePlottable <$> chart ^. subcharts
+    plots = makePlottable <$> chart^.subcharts
 
     -- these are necessary if you wish to have multiple plots on the same chart.
-    minXChart = minimum [ minXVal (subchart ^. dataset) | subchart <- chart ^. subcharts ]
-    maxXChart = maximum [ maxXVal (subchart ^. dataset) | subchart <- chart ^. subcharts ]
+    minXChart = minimum [ minXVal (subchart^.dataset) | subchart <- chart^.subcharts ]
+    maxXChart = maximum [ maxXVal (subchart^.dataset) | subchart <- chart^.subcharts ]
 
-    minXVal d = fst $ fromJust (MMQ.minimum d)
-    maxXVal d = fst $ fromJust (MMQ.maximum d)
+    minXVal d = let Just p = MMQ.minimum d in fst p
+    maxXVal d = let Just p = MMQ.maximum d in fst p
 
 makePlottable :: Subchart -> Plottable Double Double
 makePlottable subchart =
@@ -94,8 +93,8 @@ makePlottable subchart =
       $ Chart.plot_points_values .~ MMQ.toList d
       $ def
   where
-    d = subchart ^. dataset
-    l = unpack (subchart ^. label)
+    d = subchart^.dataset
+    l = unpack (subchart^.label)
 
 pushToBuffer :: Point -> Subchart -> Subchart
 pushToBuffer p chart = chart & buffer %~ MMB.putBy (comparing snd) p
@@ -111,8 +110,8 @@ pushToDataset p subchart =
   subchart & numDataPoints +~ 1
            & dataset       %~ dataset'
   where
-    nPoints    = subchart ^. numDataPoints
-    maxPoints  = subchart ^. maxDataPoints
+    nPoints    = subchart^.numDataPoints
+    maxPoints  = subchart^.maxDataPoints
     dataset' d =
       if nPoints >= maxPoints
         then snd (pushPopPoint p d)

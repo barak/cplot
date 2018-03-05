@@ -13,8 +13,8 @@ module Options
 
 import           Control.Arrow       (left)
 import           Control.Lens
-import           Data.HashMap.Lazy   (HashMap)
-import qualified Data.HashMap.Lazy   as Map
+import           Data.HashMap.Strict   (HashMap)
+import qualified Data.HashMap.Strict   as Map
 import           Data.Monoid         ((<>))
 import           Data.Text           (Text)
 import qualified Data.Text           as T
@@ -44,7 +44,7 @@ parseOptions = AppOptions . toChartMap <$> chartsParser
      <> short 'c'
      <> help "[chart name] [subchart label] [line|scatter] [subchart label] ..."
 
-    toChartMap cs = Map.fromList [ (chart ^. title, chart) | chart <- cs ]
+    toChartMap cs = Map.fromList [ (chart^.title, chart) | chart <- cs ]
 
 -- | Optparse specific ChartType parser
 chartReader :: ReadM Chart
