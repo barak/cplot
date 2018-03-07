@@ -24,6 +24,10 @@ executable cplot
                      , Options
                      , MinMaxQueue
                      , MinMaxBuffer
+                     , Buffer
+                     , Buffer.Backend.MinMax
+                     , Buffer.Backend.Queue
+                     , Buffer.Internal.Types
                      , Utils
   main-is:             Main.hs
   ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N

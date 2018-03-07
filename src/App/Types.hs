@@ -96,7 +96,8 @@ instance FromJSON AppConfig where
 
 -- it's worth iterating on these values
 defaultAppConfig :: ByteString
-defaultAppConfig = [r|
+defaultAppConfig = [r|# CPLOT DEFAULT CONFIG
+
 FPS:            24
 drain-rate:     1000
 default-width:  800

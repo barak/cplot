@@ -5,11 +5,15 @@ module Chart.Types where
 
 import           Control.Lens
 import           Data.Default
-import           Data.Text    (Text)
-import           MinMaxBuffer (MinMaxBuffer)
-import qualified MinMaxBuffer as MMB
-import           MinMaxQueue  (MinMaxQueue)
-import qualified MinMaxQueue  as MMQ
+import           Data.Ord              (comparing)
+import           Data.Text             (Text)
+
+import           Buffer                (Buffer)
+import qualified Buffer.Backend.MinMax as MMB
+import qualified Buffer.Backend.Queue  as QB
+
+import           MinMaxQueue           (MinMaxQueue)
+import qualified MinMaxQueue           as MMQ
 
 
 type Point   = (Double, Double)
@@ -23,18 +27,18 @@ data Chart = Chart
 -- | Represents a single data/style group inside a chart
 data Subchart = Subchart
   { _label         :: Text
-  , _buffer        :: MinMaxBuffer Point
+  , _buffer        :: Buffer (Double, Double)
   , _dataset       :: Dataset
   , _style         :: PlotStyle
   , _xAxisBounds   :: (Double, Double)
   , _numDataPoints :: Int
-  -- consider making this 'Maybe Int', in case we want an unbounded dataset
   , _maxDataPoints :: Int
   }
 
 data PlotStyle
   = LinePlot
   | ScatterPlot
+  | Histogram
 
 makeLenses ''Chart
 makeLenses ''Subchart
@@ -51,10 +55,10 @@ instance Default Chart where
 instance Default Subchart where
   def = Subchart
     { _label         = "label"
-    , _buffer        = MMB.empty
+    , _buffer        = MMB.minMaxBufferBy (comparing snd) -- QB.queueBuffer
     , _dataset       = MMQ.empty
     , _style         = LinePlot
     , _xAxisBounds   = (0, 1)
     , _numDataPoints = 0
-    , _maxDataPoints = 5000
+    , _maxDataPoints = 500
     }

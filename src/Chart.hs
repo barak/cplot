@@ -30,10 +30,9 @@ import           Control.Lens                           hiding ((:<), (<|),
                                                          (|>))
 import           Control.Monad                          (void)
 import           Data.Default                           (def)
-import           Data.Ord                               (comparing)
 import           Data.Text                              (unpack)
 
-import qualified MinMaxBuffer                           as MMB
+import qualified Buffer
 import qualified MinMaxQueue                            as MMQ
 
 import qualified Graphics.Rendering.Cairo               as Cairo
@@ -97,13 +96,13 @@ makePlottable subchart =
     l = unpack (subchart^.label)
 
 pushToBuffer :: Point -> Subchart -> Subchart
-pushToBuffer p chart = chart & buffer %~ MMB.putBy (comparing snd) p
+pushToBuffer p chart = chart & buffer %~ Buffer.put p
 
 drainBufferToDataset :: Subchart -> Subchart
 drainBufferToDataset subchart = foldr pushToDataset subchart' elems
   where
-    elems     = MMB.drain (subchart^.buffer)
-    subchart' = subchart & buffer .~ MMB.empty
+    (emptyBuf, elems) = Buffer.drain (subchart^.buffer)
+    subchart'         = subchart & buffer .~ emptyBuf
 
 pushToDataset :: Point -> Subchart -> Subchart
 pushToDataset p subchart =

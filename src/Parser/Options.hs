@@ -35,8 +35,9 @@ stringLiteral = lexeme $
 
 parseChartStyle :: Parser PlotStyle
 parseChartStyle = lexeme $
-      (string "line"    >> return LinePlot)
-  <|> (string "scatter" >> return ScatterPlot)
+      (string "line"      >> return LinePlot)
+  <|> (string "scatter"   >> return ScatterPlot)
+  <|> (string "histogram" >> return Histogram)
 
 parseSubchart :: Parser Subchart
 parseSubchart = do
