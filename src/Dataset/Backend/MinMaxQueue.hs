@@ -1,12 +1,14 @@
 {-# LANGUAGE LambdaCase #-}
 
-module MinMaxQueue
+module Dataset.Backend.MinMaxQueue
   ( MinMaxQueue
   , empty
   , toList
   , fromList
   , push
   , pop
+  , pushPop
+  , removeEnd
   , maximum
   , minimum
   ) where
@@ -97,6 +99,21 @@ minimum = \case
   MMQ ((_,_,mn):_)            [] -> Just mn
   MMQ           [] ((_,_,mn'):_) -> Just mn'
   MMQ ((_,_,mn):_) ((_,_,mn'):_) -> Just (min mn mn')
+
+
+-- | Pushes left, pops right, discards popped point.
+pushPop :: Ord p => p -> MinMaxQueue p -> MinMaxQueue p
+pushPop p mmq =
+  case pop mmq of
+    Nothing        -> push p empty
+    Just (_, mmq') -> push p mmq'
+
+
+removeEnd :: Ord p => MinMaxQueue p -> MinMaxQueue p
+removeEnd mmq =
+  case pop mmq of
+    Nothing        -> empty
+    Just (_, mmq') -> mmq'
 
 instance Default (MinMaxQueue a) where
   def = MMQ [] []

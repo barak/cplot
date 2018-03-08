@@ -4,7 +4,6 @@
 module Chart
   ( Chart
   , Subchart
-  , Point
 
   -- Chart lenses
   , title
@@ -14,7 +13,6 @@ module Chart
   , label
   , dataset
   , style
-  , xAxisBounds
   , numDataPoints
   , maxDataPoints
 
@@ -22,8 +20,6 @@ module Chart
   , renderChart
   , pushToBuffer
   , drainBufferToDataset
-  , pushPoint
-  , pushPopPoint
   ) where
 
 import           Control.Lens                           hiding ((:<), (<|),
@@ -31,9 +27,10 @@ import           Control.Lens                           hiding ((:<), (<|),
 import           Control.Monad                          (void)
 import           Data.Default                           (def)
 import           Data.Text                              (unpack)
+import           Data.Maybe                             (catMaybes)
 
 import qualified Buffer
-import qualified MinMaxQueue                            as MMQ
+import qualified Dataset
 
 import qualified Graphics.Rendering.Cairo               as Cairo
 import qualified Graphics.Rendering.Chart               as Chart
@@ -61,8 +58,8 @@ renderChart chart rect =
       $ Chart.layout_plots .~ map plottableToPlot plots
       $ Chart.layout_x_axis . Chart.laxis_generate .~ const Chart.AxisData
         { Chart._axis_visibility = def
-        , Chart._axis_viewport   = Chart.vmap   (minXChart, maxXChart)
-        , Chart._axis_tropweiv   = Chart.invmap (minXChart, maxXChart)
+        , Chart._axis_viewport   = Chart.vmap   (minX, maxX)
+        , Chart._axis_tropweiv   = Chart.invmap (minX, maxX)
         , Chart._axis_ticks      = def
         -- FIXME: the two below need fixing (when I figure out how to fix them)
         , Chart._axis_grid       = def
@@ -72,30 +69,34 @@ renderChart chart rect =
 
     plots = makePlottable <$> chart^.subcharts
 
-    -- these are necessary if you wish to have multiple plots on the same chart.
-    minXChart = minimum [ minXVal (subchart^.dataset) | subchart <- chart^.subcharts ]
-    maxXChart = maximum [ maxXVal (subchart^.dataset) | subchart <- chart^.subcharts ]
+    bounds = catMaybes
+      [ Dataset.xbounds (subchart^.dataset) | subchart <- chart^.subcharts ]
 
-    minXVal d = let Just p = MMQ.minimum d in fst p
-    maxXVal d = let Just p = MMQ.maximum d in fst p
+    -- FIXME: BAD, fails if empty
+    minX = minimum (map fst bounds)
+    maxX = maximum (map snd bounds)
 
+-- this function (and much of this module) needs to change to accomodate
+-- different kinds of data for the charts
 makePlottable :: Subchart -> Plottable Double Double
 makePlottable subchart =
   case view style subchart of
     LinePlot -> MkPlottable
       $ Chart.plot_lines_title  .~ l
-      $ Chart.plot_lines_values .~ [MMQ.toList d]
+      $ Chart.plot_lines_values .~ [ map (\(Dataset.Point x y) -> (x, y)) (Dataset.toList d)]
       $ def
 
     ScatterPlot -> MkPlottable
       $ Chart.plot_points_title  .~ l
-      $ Chart.plot_points_values .~ MMQ.toList d
+      $ Chart.plot_points_values .~ map (\(Dataset.Point x y) -> (x, y)) (Dataset.toList d)
       $ def
+
+    Histogram -> undefined
   where
     d = subchart^.dataset
     l = unpack (subchart^.label)
 
-pushToBuffer :: Point -> Subchart -> Subchart
+pushToBuffer :: Dataset.Point -> Subchart -> Subchart
 pushToBuffer p chart = chart & buffer %~ Buffer.put p
 
 drainBufferToDataset :: Subchart -> Subchart
@@ -104,26 +105,13 @@ drainBufferToDataset subchart = foldr pushToDataset subchart' elems
     (emptyBuf, elems) = Buffer.drain (subchart^.buffer)
     subchart'         = subchart & buffer .~ emptyBuf
 
-pushToDataset :: Point -> Subchart -> Subchart
+pushToDataset :: Dataset.Point -> Subchart -> Subchart
 pushToDataset p subchart =
-  subchart & numDataPoints +~ 1
-           & dataset       %~ dataset'
+  subchart & numDataPoints +~ (if nPoints >= maxPoints then 0 else 1)
+           & dataset       %~ maybeInsert p
   where
     nPoints    = subchart^.numDataPoints
     maxPoints  = subchart^.maxDataPoints
-    dataset' d =
-      if nPoints >= maxPoints
-        then snd (pushPopPoint p d)
-        else pushPoint p d
-
-popPoint :: Dataset -> (Point, Dataset)
-popPoint d = case MMQ.pop d of
-  Just (p, d') -> (p, d')
-  Nothing      -> ((0, 0), d)
-
-pushPoint :: Point -> Dataset -> Dataset
-pushPoint = MMQ.push
-
-pushPopPoint :: Point -> Dataset -> (Point, Dataset)
-pushPopPoint p d = (p', pushPoint p d')
-  where (p', d') = popPoint d
+    maybeInsert point d
+      | nPoints >= maxPoints = Dataset.push point (Dataset.removeEnd d)
+      | otherwise            = Dataset.push point d

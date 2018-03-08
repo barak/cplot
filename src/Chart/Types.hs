@@ -1,23 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE TemplateHaskell           #-}
 
 module Chart.Types where
 
 import           Control.Lens
 import           Data.Default
-import           Data.Ord              (comparing)
-import           Data.Text             (Text)
+import           Data.Text                (Text)
 
-import           Buffer                (Buffer)
-import qualified Buffer.Backend.MinMax as MMB
-import qualified Buffer.Backend.Queue  as QB
+import           Buffer                   (Buffer)
+import qualified Buffer.Backend.MinMax    as MMB
 
-import           MinMaxQueue           (MinMaxQueue)
-import qualified MinMaxQueue           as MMQ
+import           Dataset                  (Dataset, Point(..))
+import qualified Dataset.Backend.Line     as Line
 
-
-type Point   = (Double, Double)
-type Dataset = MinMaxQueue Point
 
 data Chart = Chart
   { _title     :: Text
@@ -27,10 +24,9 @@ data Chart = Chart
 -- | Represents a single data/style group inside a chart
 data Subchart = Subchart
   { _label         :: Text
-  , _buffer        :: Buffer (Double, Double)
-  , _dataset       :: Dataset
+  , _buffer        :: Buffer Point
+  , _dataset       :: Dataset Point
   , _style         :: PlotStyle
-  , _xAxisBounds   :: (Double, Double)
   , _numDataPoints :: Int
   , _maxDataPoints :: Int
   }
@@ -42,6 +38,11 @@ data PlotStyle
 
 makeLenses ''Chart
 makeLenses ''Subchart
+
+-- temporary function
+second :: Point -> Point -> Ordering
+second (Point _ y) (Point _ y') = compare y y'
+second p           p'           = compare p p'
 
 --------------------------------------------------------------------------------
 -- DEFAULT INSTANCES
@@ -55,10 +56,9 @@ instance Default Chart where
 instance Default Subchart where
   def = Subchart
     { _label         = "label"
-    , _buffer        = MMB.minMaxBufferBy (comparing snd) -- QB.queueBuffer
-    , _dataset       = MMQ.empty
+    , _buffer        = MMB.minMaxBufferBy second
+    , _dataset       = Line.lineDataset
     , _style         = LinePlot
-    , _xAxisBounds   = (0, 1)
     , _numDataPoints = 0
     , _maxDataPoints = 500
     }

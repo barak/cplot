@@ -22,12 +22,18 @@ executable cplot
                      , Parser.Point
                      , Parser.Options
                      , Options
-                     , MinMaxQueue
-                     , MinMaxBuffer
+
                      , Buffer
                      , Buffer.Backend.MinMax
                      , Buffer.Backend.Queue
                      , Buffer.Internal.Types
+
+                     , Dataset
+                     , Dataset.Backend.Line
+                     , Dataset.Backend.Scatter
+                     , Dataset.Backend.Histogram
+                     , Dataset.Backend.MinMaxQueue
+                     , Dataset.Internal.Types
                      , Utils
   main-is:             Main.hs
   ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N

@@ -12,8 +12,7 @@ module Parser.Point
 import           Control.Lens
 import           Data.Attoparsec.ByteString.Char8
 import           Data.ByteString                  (ByteString)
-
-import           Chart
+import           Dataset.Internal.Types           (Point (..))
 
 
 data Message = Message
@@ -26,10 +25,11 @@ makeLenses ''Message
 stringLiteral :: Parser ByteString
 stringLiteral = takeWhile1 (\c -> isAlpha_ascii c || isDigit c)
 
+-- this only parses to the second constructor right now
 pointP :: Parser Point
-pointP = (,) <$> double
-             <*  skipSpace
-             <*> double
+pointP = Point <$> double
+               <*  skipSpace
+               <*> double
 
 message :: Parser Message
 message = Message <$> stringLiteral
