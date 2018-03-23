@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Dataset.Backend.MinMaxQueue
   ( MinMaxQueue
   , empty

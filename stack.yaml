@@ -4,4 +4,5 @@ packages:
 - .
 extra-deps:
 - megaparsec-6.2.0
-resolver: lts-9.9
+
+resolver: lts-9.21

@@ -6,7 +6,7 @@ import           Dataset.Internal.Types
 
 
 -- | By default, scatter data doesn't do anthing fancy
-scatterDataset :: Dataset (Double, Double)
+scatterDataset :: Dataset Point
 scatterDataset = Dataset
   { _insert    = (:)
   , _removeEnd = id

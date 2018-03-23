@@ -17,11 +17,17 @@ executable cplot
   hs-source-dirs:      src
   other-modules:       App
                      , App.Types
+
                      , Chart
+                     , Chart.Backend.Chart
                      , Chart.Types
-                     , Parser.Point
-                     , Parser.Options
+
                      , Options
+
+                     , Parser.GUI
+                     , Parser.Message
+                     , Parser.Options
+                     , Parser.Types
 
                      , Buffer
                      , Buffer.Backend.MinMax
@@ -34,16 +40,57 @@ executable cplot
                      , Dataset.Backend.Histogram
                      , Dataset.Backend.MinMaxQueue
                      , Dataset.Internal.Types
-                     , Utils
+
   main-is:             Main.hs
-  ghc-options:         -Wall -O2 -threaded -rtsopts -with-rtsopts=-N
+
+  ghc-options:         -Wall -Wcompat -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns -Wredundant-constraints
+                       -O2 -threaded -rtsopts -with-rtsopts=-N
+
   default-language:    Haskell2010
+
+  default-extensions:  ApplicativeDo
+                     , BangPatterns
+                     , ConstraintKinds
+                     , DataKinds
+                     , DefaultSignatures
+                     , DeriveFoldable
+                     , DeriveFunctor
+                     , DeriveGeneric
+                     , DeriveLift
+                     , DeriveTraversable
+                     , EmptyCase
+                     , ExistentialQuantification
+                     , FlexibleContexts
+                     , FlexibleInstances
+                     , FunctionalDependencies
+                     , GADTs
+                     , GeneralizedNewtypeDeriving
+                     , InstanceSigs
+                     , KindSignatures
+                     , LambdaCase
+                     , MultiParamTypeClasses
+                     , MultiWayIf
+                     , NamedFieldPuns
+                     , OverloadedStrings
+                     , PatternSynonyms
+                     , RankNTypes
+                     , ScopedTypeVariables
+                     , StandaloneDeriving
+                     , TupleSections
+                     , TypeApplications
+                     , TypeFamilies
+                     , TypeOperators
+
   build-depends:       base >= 4.7 && < 5
-                     , unordered-containers
-                     , containers >= 0.5
-                     , stm
+
+                     , text >= 1.2
+                     , bytestring >= 0.10
+
                      , Chart >= 1.8
                      , Chart-cairo >= 1.8
+
+                     , cairo >= 0.13
                      , haskell-gi >= 0.20
                      , haskell-gi-base >= 0.20
                      , gi-gtk >= 3.0
@@ -51,24 +98,23 @@ executable cplot
                      , gi-gdk >= 3.0
                      , gi-glib >= 2.0
                      , colour >= 2.3
+
+                     , pipes >= 4.3
+                     , pipes-bytestring >= 2.1.6
+                     , pipes-group >= 1.0
+
                      , lens >= 4.15
                      , mtl >= 2.2
-                     , text >= 1.2
-                     , bytestring >= 0.10
-                     , scientific >= 0.3
-                     , cairo >= 0.13
-                     , pipes >= 4.3
-                     , pipes-bytestring
-                     , pipes-group >= 1.0
                      , safe-exceptions >= 0.1
+
                      , megaparsec >= 6.2
-                     , attoparsec
+                     , attoparsec >= 0.13
                      , optparse-applicative >= 0.13
+                     , yaml >= 0.8.25
+                     , aeson >= 1.1.2.0
+
+                     , unordered-containers >= 0.2.8
                      , data-default >= 0.7
-                     , yaml
-                     , aeson
-                     , raw-strings-qq
-                     , directory
-                     , monad-control
-                     , transformers-base
-                     , lifted-base
+                     , raw-strings-qq >= 1.1
+                     , directory >= 1.3.0.0
+                     , file-embed >= 0.0.10

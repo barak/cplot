@@ -1,18 +1,24 @@
--- USAGE:
---   Import this module and any backends you need
-
 {-# LANGUAGE RecordWildCards #-}
 
 module Buffer
   ( Buffer
   , put
-  , drain
+  , flush
   ) where
 
 import Buffer.Internal.Types
 
 put :: e -> Buffer e -> Buffer e
-put e Buffer{..} = Buffer putBuf drainBuf emptyBuf (putBuf e buffer)
+put e Buffer{..} =
+  Buffer _put
+         _flush
+         _empty
+         (_put e _buffer)
 
-drain :: Buffer e -> (Buffer e, [e])
-drain Buffer{..} = (Buffer putBuf drainBuf emptyBuf emptyBuf, drainBuf buffer)
+flush :: Buffer e -> (Buffer e, [e])
+flush Buffer{..} =
+  ( Buffer _put
+           _flush
+           _empty
+           _empty
+  , _flush _buffer )

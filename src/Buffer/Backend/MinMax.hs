@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Buffer.Backend.MinMax
   ( minMaxBuffer
   , minMaxBufferBy
@@ -26,8 +24,8 @@ putBy cmp x = \case
     (True,  True,  True)  -> Pair b x
     _                     -> Pair a b
 
-drain :: MinMaxBuffer a -> [a]
-drain = \case
+flush :: MinMaxBuffer a -> [a]
+flush = \case
   Nil      -> []
   Single a -> [a]
   Pair a b -> [b, a]
@@ -37,16 +35,16 @@ empty = Nil
 
 minMaxBuffer :: Ord a => Buffer a
 minMaxBuffer = Buffer
-  { putBuf   = put
-  , drainBuf = drain
-  , emptyBuf = empty
-  , buffer   = empty
+  { _put    = put
+  , _flush  = flush
+  , _empty  = empty
+  , _buffer = empty
   }
 
 minMaxBufferBy :: (a -> a -> Ordering) -> Buffer a
 minMaxBufferBy cmp = Buffer
-  { putBuf   = putBy cmp
-  , drainBuf = drain
-  , emptyBuf = empty
-  , buffer   = empty
+  { _put    = putBy cmp
+  , _flush  = flush
+  , _empty  = empty
+  , _buffer = empty
   }

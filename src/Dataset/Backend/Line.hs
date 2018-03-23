@@ -22,5 +22,5 @@ xbounds dataset = do
   mx <- MMQ.maximum dataset
   mn <- MMQ.minimum dataset
   case (mn, mx) of
-    (Point x _, Point x' _) -> Just (x, x')
-    _                       -> Nothing
+    (P2 x _, P2 x' _) -> Just (x, x')
+    _                 -> Nothing

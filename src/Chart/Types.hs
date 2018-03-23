@@ -1,5 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
 
@@ -17,8 +15,9 @@ import qualified Dataset.Backend.Line     as Line
 
 
 data Chart = Chart
-  { _title     :: Text
-  , _subcharts :: [Subchart]
+  { _title       :: Text
+  , _subcharts   :: [Subchart]
+  , _axisScaling :: AxisScaling
   }
 
 -- | Represents a single data/style group inside a chart
@@ -31,6 +30,10 @@ data Subchart = Subchart
   , _maxDataPoints :: Int
   }
 
+data AxisScaling
+  = LinearScaling
+  | LogScaling
+
 data PlotStyle
   = LinePlot
   | ScatterPlot
@@ -41,16 +44,17 @@ makeLenses ''Subchart
 
 -- temporary function
 second :: Point -> Point -> Ordering
-second (Point _ y) (Point _ y') = compare y y'
-second p           p'           = compare p p'
+second (P2 _ y) (P2 _ y') = compare y y'
+second p        p'        = compare p p'
 
 --------------------------------------------------------------------------------
 -- DEFAULT INSTANCES
 
 instance Default Chart where
   def = Chart
-    { _title     = "chart"
-    , _subcharts = []
+    { _title       = "chart"
+    , _subcharts   = []
+    , _axisScaling = LinearScaling
     }
 
 instance Default Subchart where

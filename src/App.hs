@@ -3,14 +3,14 @@ module App
   , AppEnv
   , AppConfig
   , AppState
-  , HasAppOptions
-  , HasAppConfig
-  , HasAppState
+  , HasOptions
+  , HasConfig
+  , HasState
 
   , runApp
   , newAppEnv
   , inputStream
-  , drainBuffers
+  , flushBuffers
 
   , defaultAppConfig
 
@@ -21,9 +21,12 @@ module App
 
   -- AppConfig lenses
   , fps
-  , drainRate
+  , flushRate
   , windowWidth
   , windowHeight
+
+  , lineConfig
+  , cycleAfter
 
   -- AppState lenses
   , chartRefs
@@ -31,28 +34,33 @@ module App
 
 import           Control.Concurrent.MVar
 import           Control.Lens
-import qualified Data.HashMap.Strict    as Map
-import           Data.Monoid            ((<>))
-import           Data.Text.Encoding     (decodeUtf8)
+import           Data.HashMap.Strict     ((!))
+import qualified Data.HashMap.Strict     as Map
+import           Data.Monoid             ((<>))
+import qualified Data.Text               as T
+import           Data.Text.Encoding      (decodeUtf8)
 
-import qualified Control.Concurrent     as CC
+import qualified Control.Concurrent      as CC
 import           Control.Exception.Safe
-import           Control.Monad          (forever, void)
+import           Control.Monad           (forever, void)
 import           Control.Monad.Reader
 
 import           Pipes
-import qualified Pipes.ByteString       as PB
-import qualified Pipes.Group            as PG
+import qualified Pipes.ByteString        as PB
+import qualified Pipes.Group             as PG
 
 import           App.Types
 import           Chart
 import           Options
-import           Parser.Point
+import           Parser.Message          (Message, chartID, point)
+import qualified Parser.Message          as Parser
 
 
+-- | Alias for 'AppEnv' so we don't expose the data type.
 newAppEnv :: AppOptions -> AppConfig -> AppState -> AppEnv
 newAppEnv = AppEnv
 
+-- | Supplies an application with an initial environment.
 runApp :: App a -> AppEnv -> IO ()
 runApp app = void . runReaderT (unApp app)
 
@@ -60,10 +68,18 @@ runApp app = void . runReaderT (unApp app)
 -- EXCEPTIONS
 
 data AppException
-  = NoParse String
+  = ParseError String
+  | ChartNotFound String
 
 instance Show AppException where
-  show (NoParse e) = e
+  show = \case
+    ParseError input ->
+        "Couldn't parse input: \""
+      <> input
+      <> "\"\nSyntax is \"[chartID]: [p1] [p2]\""
+
+    ChartNotFound identifier ->
+      "Chart identifier not found: \"" <> identifier <> "\""
 
 instance Exception AppException
 
@@ -71,51 +87,69 @@ instance Exception AppException
 --------------------------------------------------------------------------------
 -- PIPES
 
-parsePoint :: MonadThrow m => Pipe PB.ByteString Message m ()
-parsePoint = forever $ do
-  rawString <- await
-  case parseMessage rawString of
-    Left e  -> throw (NoParse e)
-    Right p -> yield p
+-- | Parse input to 'Message' and send downstream.
+parseMessage :: MonadThrow m
+             => Pipe PB.ByteString Message m ()
+parseMessage = forever $ do
+  rawInput <- await
+  case Parser.parseMessage rawInput of
+    Left  _       -> throw $ ParseError (T.unpack (decodeUtf8 rawInput))
+    Right message -> yield message
 
 
-fillBuffers :: (MonadIO m, MonadReader env m, HasAppState env)
+-- | Based on 'Message' content, fill relevant chart buffers.
+fillBuffers :: (MonadIO m, MonadThrow m, HasState r m)
             => Consumer Message m ()
 fillBuffers = loop
   where
     loop = do
-      msg    <- await
-      refMap <- view chartRefs
+      msg   <- await
+      refs  <- view chartRefs
 
-      case Map.lookup (decodeUtf8 $ msg^.chartID) refMap of
-        Nothing  -> loop
-        Just ref -> do
-          chart <- liftIO $ takeMVar ref
-          liftIO $ putMVar ref
-                 $ chart & subcharts . traverse %~ pushToBuffer (msg^.point)
+      let identifier = decodeUtf8 (msg^.chartID)
+
+      case Map.lookup identifier refs of
+        Nothing  -> throw $ ChartNotFound (T.unpack identifier)
+        Just (ref, flag) -> do
+          liftIO $ modifyMVar_ ref $ \chart -> return $
+            chart & subcharts.traverse %~ pushToBuffer (msg^.point)
+
+          trySignal flag
           loop
 
-drainBuffers :: (MonadIO m, MonadReader env m, HasAppState env, HasAppConfig env)
+
+-- | Equivalent of a non-blocking signal for a typical binary semaphore.
+trySignal :: MonadIO m => MVar () -> m ()
+trySignal flag = void . liftIO $ tryPutMVar flag ()
+
+-- | Periodically (depending on the flush rate) flush chart 'Buffer's into their
+--   respective 'Dataset's.
+flushBuffers :: (MonadIO m, HasState r m, HasConfig r m)
              => m ()
-drainBuffers = loop
+flushBuffers = loop
   where
     loop = do
-      μs <- view drainRate
+      μs <- view flushRate
       liftIO (CC.threadDelay μs)
 
-      refMap <- view chartRefs
-      forM_ (Map.elems refMap) $ \ref -> liftIO $ do
-        chart <- takeMVar ref
-        putMVar ref $ chart & subcharts . traverse %~ drainBufferToDataset
+      refs <- view chartRefs
+      let chartIDs = Map.keys refs
+
+      forM_ chartIDs $ \cid -> do
+        let (ref, _) = refs ! cid
+        liftIO $ modifyMVar_ ref $ \chart -> return $
+          chart & subcharts.traverse %~ flushBufferToDataset
+
       loop
 
--- | Receives points and places them in their respective buffers.
+-- | Assemble input stream.
 inputStream :: App ()
 inputStream =
   runEffect $ accumLines PB.stdin
-          >-> parsePoint
+          >-> parseMessage
           >-> fillBuffers
 
+-- | Chunk a ByteString producer by lines.
 accumLines :: Monad m => Producer PB.ByteString m r -> Producer PB.ByteString m r
 accumLines = mconcats . view PB.lines
 

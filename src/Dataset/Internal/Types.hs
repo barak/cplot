@@ -1,11 +1,9 @@
-{-# LANGUAGE ExistentialQuantification #-}
-
 module Dataset.Internal.Types where
 
 
 data Point
-  = Single Double
-  | Point Double Double
+  = P1 Double
+  | P2 Double Double
   deriving (Eq, Ord, Show)
 
 data Dataset p = forall dat. Dataset

@@ -8,8 +8,8 @@ import           Buffer.Internal.Types
 -- with them
 queueBuffer :: Buffer a
 queueBuffer = Buffer
-  { putBuf   = (:)
-  , drainBuf = id
-  , emptyBuf = []
-  , buffer   = []
+  { _put    = (:)
+  , _flush  = id
+  , _empty  = []
+  , _buffer = []
   }

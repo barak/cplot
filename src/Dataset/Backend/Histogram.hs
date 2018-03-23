@@ -5,4 +5,12 @@ module Dataset.Backend.Histogram
 import           Dataset.Internal.Types
 
 
-histogramDataset = undefined
+histogramDataset :: Dataset Point
+histogramDataset = Dataset
+  { _insert    = (:)
+  , _removeEnd = id
+  , _dataset   = []
+  , _toList    = id
+  , _xbounds   = const Nothing
+  , _ybounds   = const Nothing
+  }

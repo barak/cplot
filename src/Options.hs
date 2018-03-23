@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Options
   ( AppOptions
@@ -13,6 +12,7 @@ module Options
 
 import           Control.Arrow       (left)
 import           Control.Lens
+import           Data.Default
 import           Data.HashMap.Strict   (HashMap)
 import qualified Data.HashMap.Strict   as Map
 import           Data.Monoid         ((<>))
@@ -23,10 +23,13 @@ import           Options.Applicative
 import qualified Parser.Options      as MP
 import qualified Text.Megaparsec     as MP
 
-import           Chart
+import           Chart.Types
 
 data AppOptions = AppOptions
   { _initialCharts :: HashMap Text Chart }
+
+instance Default AppOptions where
+  def = AppOptions Map.empty
 
 makeClassy ''AppOptions
 
