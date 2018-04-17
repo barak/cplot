@@ -31,6 +31,10 @@ If this produces no output, you may need to flush stdout after each print.
 ```shell
 $ yes | gawk '@load "time"; {sleep(0.2); print "chart:", NR, NR*sqrt(NR); fflush()}' | ./cplot -c "chart data line"
 ```
+For something with a bit more visual interest, try
+```shell
+$ yes | gawk '@load "time"; {sleep(0.005); print "chart:", NR, (1+rand())*NR*sqrt(NR); fflush()}' | ./cplot -c "chart data line"
+```
 
 ## License
 
