@@ -1,6 +1,5 @@
 .stack-work/
 reports/
-examples/
 *.aux
 *.fdb_latexmk
 *.listing
