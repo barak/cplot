@@ -146,7 +146,7 @@ appGtk = do
   mapM_ (#add chartGrid) canvases
 
   ------------------------------------------------------------------------------
-  -- RADIO BUTTONS
+  -- AXIS BUTTONS
 
   radioLinear <- liftIO (builderGetObject builder "linear-log-radio1"
              >>= unsafeCastTo RadioButton . fromJust)
@@ -157,6 +157,18 @@ appGtk = do
     toggleButtonGetActive radioLinear >>= \case
       True  -> mapM_ (setLinearAxis . fst) charts
       False -> mapM_ (setLogAxis . fst) charts
+    mapM_ #queueDraw canvases
+
+  ------------------------------------------------------------------------------
+  -- BUFFER BUTTONS
+
+  radioBuffer <- liftIO (builderGetObject builder "buffer-radio1"
+             >>= unsafeCastTo RadioButton . fromJust)
+
+  on radioBuffer #toggled $ do
+    toggleButtonGetActive radioBuffer >>= \case
+      True  -> mapM_ (setMMQ . fst) charts
+      False -> mapM_ (setDefaultBuffer . fst) charts
     mapM_ #queueDraw canvases
 
   ------------------------------------------------------------------------------
@@ -194,6 +206,11 @@ type DrawFlag = CC.MVar ()
 setLinearAxis, setLogAxis :: ChartRef -> IO ()
 setLinearAxis ref = updateChart ref Chart.setLinearAxis
 setLogAxis    ref = updateChart ref Chart.setLogAxis
+
+-- | Swaps out buffers
+setMMQ, setDefaultBuffer :: ChartRef -> IO ()
+setMMQ           ref = updateAllSubcharts ref Chart.setMMQ
+setDefaultBuffer ref = updateAllSubcharts ref Chart.setDefaultBuffer
 
 -- | Convenience function for updating a chart reference with a pure function.
 updateChart :: ChartRef -> (Chart -> Chart) -> IO ()

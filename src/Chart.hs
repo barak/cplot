@@ -22,6 +22,8 @@ module Chart
   , setLogAxis
   , setConfig
   , setMaxDataPoints
+  , setMMQ
+  , setDefaultBuffer
   ) where
 
 import           Control.Lens
@@ -29,7 +31,10 @@ import           Control.Lens
 import qualified Buffer
 import qualified Dataset
 
-import qualified Chart.Backend.Chart                    as Chart
+import qualified Buffer.Backend.MinMax as MMQ
+import qualified Buffer.Backend.Queue  as Queue
+
+import qualified Chart.Backend.Chart   as Chart
 import           Chart.Types
 
 import           App.Types
@@ -67,3 +72,9 @@ setConfig conf subchart =
 
 setMaxDataPoints :: Int -> Subchart -> Subchart
 setMaxDataPoints n subchart = subchart & maxDataPoints .~ n
+
+setMMQ :: Subchart -> Subchart
+setMMQ subchart = subchart & buffer .~ MMQ.minMaxBuffer
+
+setDefaultBuffer :: Subchart -> Subchart
+setDefaultBuffer subchart = subchart & buffer .~ Queue.queueBuffer
