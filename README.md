@@ -35,6 +35,11 @@ For something with a bit more visual interest, try
 ```shell
 $ yes | gawk '@load "time"; {sleep(0.005); print "chart:", NR, (1+rand())*NR*sqrt(NR); fflush()}' | ./cplot -c "chart data line"
 ```
+Histogram example:
+```shell
+$ yes | gawk '@load "time"; {sleep(0.005); print "chart:", (1+rand())*NR*sqrt(NR); fflush()}' | ./cplot -c "chart - histogram"
+```
+
 
 ## License
 
