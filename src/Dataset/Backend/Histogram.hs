@@ -1,12 +1,14 @@
 module Dataset.Backend.Histogram
-  ( histogramDataset
+  ( dataset
   ) where
 
 import           Dataset.Internal.Types
 
 
-histogramDataset :: Dataset Point
-histogramDataset = Dataset
+-- | The dataset for a histogram is not terribly interesting, it's basically
+--   just a list.
+dataset :: Dataset Point
+dataset = Dataset
   { _insert    = (:)
   , _removeEnd = id
   , _dataset   = []
