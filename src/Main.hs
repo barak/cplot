@@ -42,8 +42,9 @@ import           Parser.GUI                        as Parser
 
 main :: IO ()
 main = do
-  opts <- liftIO parseArgs
+  opts <- parseArgs
 
+  -- Check for a configuration file. If it doesn't exist, create a new one.
   let confPath = "cplot.yaml"
   conf <- (throwEither =<<) $ do
     confPresent <- doesFileExist confPath
@@ -58,20 +59,23 @@ main = do
 
   env <- createEnvironment conf opts
 
+  -- set the input stream and flushing mechanism going on two separate threads.
   CC.forkIO $ runApp inputStream env `onException` killGUI
   CC.forkIO $ runApp flushBuffers env `onException` killGUI
 
   runGtkApp appGtk env
 
   where
-   throwEither :: (MonadThrow m, Exception e) => Either e a -> m a
-   throwEither = \case
-     Left e  -> throw e
-     Right a -> return a
+    -- Generalizes Either to MonadThrow.
+    throwEither :: (MonadThrow m, Exception e) => Either e a -> m a
+    throwEither = \case
+      Left e  -> throw e
+      Right a -> return a
 
-   killGUI = Gdk.threadsAddIdle GLib.PRIORITY_DEFAULT (mainQuit >> return True)
+    -- Communicate from a separate thread that the GUI should be killed.
+    killGUI = Gdk.threadsAddIdle GLib.PRIORITY_DEFAULT (mainQuit >> return True)
 
--- | Pass control of the main thread to GTK
+-- | Pass control of the main thread to GTK.
 runGtkApp :: App a -> AppEnv -> IO ()
 runGtkApp app env = do
   Gtk.init Nothing
@@ -104,16 +108,18 @@ renderWithContext ctx r =
     runReaderT (runRender r) (Cairo (castPtr p))
 
 
--- | Bake UI XML file into source with TemplateHaskell
+-- | Bake UI XML file into source with TemplateHaskell. By far the easiest way
+--   to make sure that external resources can be packaged into the binary
+--   properly.
 ui :: B.ByteString
 ui = $(embedFile "resources/gui.glade")
 
 
--- | Main GTK application
+-- | Main GTK application.
 appGtk :: App ()
 appGtk = do
 
-  -- Retrieve GUI template from Glade
+  -- Retrieve GUI template from Glade.
   builder <- builderNewFromString (T.decodeUtf8 ui) (fromIntegral $ B.length ui)
 
   ------------------------------------------------------------------------------
@@ -172,22 +178,25 @@ appGtk = do
     mapM_ #queueDraw canvases
 
   ------------------------------------------------------------------------------
-  -- TEXT BOX
+  -- TEXT BOX (for setting the max number of data points)
   maxPointsEntry <- liftIO (builderGetObject builder "max-points-entry"
                 >>= unsafeCastTo Entry . fromJust)
 
   view chartRefs >>= \refs -> on maxPointsEntry #activate $ do
     input <- entryGetText maxPointsEntry
+    
     case Parser.parseNumericEntry input of
-      Left e  -> hPutStr stderr (Parser.parseErrorPretty e)
+      Left e ->
+        hPutStr stderr (Parser.parseErrorPretty e)
+
       Right n -> forM_ refs $ \(ref,_) ->
         updateAllSubcharts ref (Chart.setMaxDataPoints n)
 
   ------------------------------------------------------------------------------
   -- REDRAW CHARTS
 
-  -- GLib SourceFunc needs IO explicitly, not MonadIO, so we need to pass
-  -- these as arguments (unfortunately)
+  -- GLib SourceFunc needs IO explicitly, not MonadIO, so we need to pass part
+  -- of the environment as arguments (unfortunately)
   framerate <- view fps
   refs      <- view chartRefs
 
@@ -195,22 +204,12 @@ appGtk = do
     maybeRedrawCharts refs canvases
     return True
 
-
+  -- show everything
   #showAll mainWindow
 
 
 type ChartRef = CC.MVar Chart
 type DrawFlag = CC.MVar ()
-
--- | Sets a charts axis scaling.
-setLinearAxis, setLogAxis :: ChartRef -> IO ()
-setLinearAxis ref = updateChart ref Chart.setLinearAxis
-setLogAxis    ref = updateChart ref Chart.setLogAxis
-
--- | Swaps out buffers
-setMMQ, setDefaultBuffer :: ChartRef -> IO ()
-setMMQ           ref = updateAllSubcharts ref Chart.setMMQ
-setDefaultBuffer ref = updateAllSubcharts ref Chart.setDefaultBuffer
 
 -- | Convenience function for updating a chart reference with a pure function.
 updateChart :: ChartRef -> (Chart -> Chart) -> IO ()
@@ -221,6 +220,15 @@ updateChart ref f = CC.modifyMVar_ ref (pure . f)
 updateAllSubcharts :: ChartRef -> (Subchart -> Subchart) -> IO ()
 updateAllSubcharts ref f = updateChart ref (Chart.subcharts.traverse %~ f)
 
+-- | Updates a charts axis scaling.
+setLinearAxis, setLogAxis :: ChartRef -> IO ()
+setLinearAxis ref = updateChart ref Chart.setLinearAxis
+setLogAxis    ref = updateChart ref Chart.setLogAxis
+
+-- | Swaps out buffers.
+setMMQ, setDefaultBuffer :: ChartRef -> IO ()
+setMMQ           ref = updateAllSubcharts ref Chart.setMMQ
+setDefaultBuffer ref = updateAllSubcharts ref Chart.setDefaultBuffer
 
 -- | Redraw any charts with raised DrawFlag's.
 maybeRedrawCharts :: HashMap Text (ChartRef, DrawFlag)
@@ -271,4 +279,4 @@ generateChartCanvases = do
     canvas <- new DrawingArea []
     return (cid, canvas)
 
-  return $ Map.fromList canvasesWithID
+  return (Map.fromList canvasesWithID)

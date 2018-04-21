@@ -4,8 +4,8 @@ module Buffer.Backend.Queue
 
 import           Buffer.Internal.Types
 
--- this buffer just retains the order of points without doing anything special
--- with them
+-- This buffer just retains the order of points without doing anything special
+-- with them. You can think of it as an identity buffer of sorts.
 queueBuffer :: Buffer a
 queueBuffer = Buffer
   { _put    = (:)

@@ -26,7 +26,9 @@ import qualified Text.Megaparsec     as MP
 import           Chart.Types
 
 data AppOptions = AppOptions
-  { _initialCharts :: HashMap Text Chart }
+  { _initialCharts :: HashMap Text Chart
+  -- ^ The initial set of charts defined by the command line options.
+  }
 
 instance Default AppOptions where
   def = AppOptions Map.empty
@@ -49,10 +51,10 @@ parseOptions = AppOptions . toChartMap <$> chartsParser
 
     toChartMap cs = Map.fromList [ (chart^.title, chart) | chart <- cs ]
 
--- | Optparse specific ChartType parser
-chartReader :: ReadM Chart
-chartReader = parsecReadM MP.parseChart
-
 -- | Transforms megaparsec parsers into optparse ReadM parsers
 parsecReadM :: MP.Parser a -> ReadM a
 parsecReadM p = eitherReader (left MP.parseErrorPretty . MP.parse p "" . T.pack)
+
+-- | Convert megaparsec 'parseChart' parser to a ReadM parser.
+chartReader :: ReadM Chart
+chartReader = parsecReadM MP.parseChart

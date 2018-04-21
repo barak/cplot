@@ -1,14 +1,14 @@
 module Dataset.Backend.Line
-  ( lineDataset
+  ( dataset
   ) where
 
 import qualified Dataset.Backend.MinMaxQueue as MMQ
 import           Dataset.Internal.Types
 
 
--- | By default, line data sets use a 'MinMaxQueue'
-lineDataset :: Dataset Point
-lineDataset = Dataset
+-- | By default, line data sets use a 'MinMaxQueue'.
+dataset :: Dataset Point
+dataset = Dataset
   { _insert    = MMQ.push
   , _removeEnd = MMQ.removeEnd
   , _dataset   = MMQ.empty
@@ -18,9 +18,9 @@ lineDataset = Dataset
   }
 
 xbounds :: MMQ.MinMaxQueue Point -> Maybe (Double, Double)
-xbounds dataset = do
-  mx <- MMQ.maximum dataset
-  mn <- MMQ.minimum dataset
+xbounds dataset' = do
+  mx <- MMQ.maximum dataset'
+  mn <- MMQ.minimum dataset'
   case (mn, mx) of
     (P2 x _, P2 x' _) -> Just (x, x')
     _                 -> Nothing

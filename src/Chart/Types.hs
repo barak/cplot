@@ -14,13 +14,15 @@ import           Dataset                  (Dataset, Point(..))
 import qualified Dataset.Backend.Line     as Line
 
 
+-- | Internal chart data type. We compute using this type, then map it to a view
+--   later on. This keeps the chart code separate from the rendering.
 data Chart = Chart
   { _title       :: Text
   , _subcharts   :: [Subchart]
   , _axisScaling :: AxisScaling
   }
 
--- | Represents a single data/style group inside a chart
+-- | Represents a single data/style group inside a chart.
 data Subchart = Subchart
   { _label         :: Text
   , _buffer        :: Buffer Point
@@ -42,7 +44,7 @@ data PlotStyle
 makeLenses ''Chart
 makeLenses ''Subchart
 
--- temporary function
+-- Temporary function. Defines an ordering of points by their second component.
 second :: Point -> Point -> Ordering
 second (P2 _ y) (P2 _ y') = compare y y'
 second p        p'        = compare p p'
@@ -61,7 +63,7 @@ instance Default Subchart where
   def = Subchart
     { _label         = "label"
     , _buffer        = MMB.minMaxBufferBy second
-    , _dataset       = Line.lineDataset
+    , _dataset       = Line.dataset
     , _style         = LinePlot
     , _numDataPoints = 0
     , _maxDataPoints = 500
